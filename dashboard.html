@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>よい日々 売上進捗ダッシュボード</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<h1>よい日々 売上進捗ダッシュボード</h1>
+
+<div id="dropzone" class="dropzone">
+  ここに1期実績xlsx／月次実績xlsx／日次売上csvをドラッグ&ドロップ、または
+  <input type="file" id="fileInput" multiple accept=".xlsx,.csv">
+</div>
+<p id="status"></p>
+<div id="warnings"></div>
+
+<div class="month-selector">
+  対象月:
+  <select id="monthSelect"></select>
+</div>
+
+<div id="kpiRow" class="kpi-row"></div>
+
+<div class="chart-row">
+  <div class="chart-card"><canvas id="trendChart" height="220"></canvas></div>
+  <div class="chart-card"><canvas id="dailyChart" height="220"></canvas></div>
+</div>
+
+<div id="channelTable"></div>
+
+<details class="settings-panel">
+  <summary>設定</summary>
+  <p>
+    今月の目標　売上: <input type="number" id="salesTargetInput" placeholder="円">
+    粗利: <input type="number" id="profitTargetInput" placeholder="円">
+  </p>
+  <p>
+    <button id="exportBtn">データを書き出し(JSON)</button>
+    データを読み込み: <input type="file" id="importInput" accept=".json">
+    <button id="clearBtn">全データをクリア</button>
+  </p>
+</details>
+
+<script src="js/vendor/xlsx.full.min.js"></script>
+<script src="js/vendor/chart.umd.js"></script>
+<script src="js/mapping.js"></script>
+<script src="js/parsers.js"></script>
+<script src="js/store.js"></script>
+<script src="js/aggregate.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
