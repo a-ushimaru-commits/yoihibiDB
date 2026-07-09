@@ -4,7 +4,7 @@
   "private": true,
   "description": "よい日々 売上進捗ダッシュボード（単一HTML、クライアントサイドのみ）",
   "scripts": {
-    "test": "node --test tests/scaffold.test.js"
+    "test": "node --test \"tests/*.test.js\""
   },
   "devDependencies": {
     "xlsx": "^0.18.5",
