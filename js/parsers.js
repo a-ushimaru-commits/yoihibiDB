@@ -242,5 +242,14 @@
     return { records: Array.from(agg.values()), unmappedMedia };
   }
 
-  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv };
+  function detectFileType(fileName, sheetNames) {
+    const name = fileName || '';
+    const sheets = sheetNames || [];
+    if (/^粗利分析_よい日々1期/.test(name) || sheets.includes('詳細明細')) return 'base';
+    if (/^商品別収益/.test(name) || sheets.includes('売上明細_提出')) return 'monthly';
+    if (/\.csv$/i.test(name) || /^受注_売上一覧表/.test(name)) return 'daily';
+    return 'unknown';
+  }
+
+  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType };
 });
