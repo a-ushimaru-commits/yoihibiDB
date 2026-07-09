@@ -14,8 +14,8 @@ test('parseShippingDate handles JS Date instances', () => {
 });
 
 test('parseShippingDate handles Excel serial numbers', () => {
-  // Excel serial 46165 = 2026-06-09 (days since 1899-12-30)
-  const r = parseShippingDate(46165);
+  // Excel serial 46182 = 2026-06-09 (days since 1899-12-30)
+  const r = parseShippingDate(46182);
   assert.deepEqual(r, { yearMonth: '2026-06', date: '2026-06-09' });
 });
 

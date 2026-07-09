@@ -66,9 +66,8 @@
   }
 
   function excelSerialToDate(serial) {
-    // Excel serial 1 = January 1, 1900
-    // Add the serial number of days, with a 16-day offset to account for the system
-    const ms = Date.UTC(1900, 0, 1) + (serial - 1) * 86400000 + 16 * 86400000;
+    // Excel serial 1 = January 1, 1900 (epoch from December 30, 1899)
+    const ms = Date.UTC(1899, 11, 30) + serial * 86400000;
     return new Date(ms);
   }
 
