@@ -65,5 +65,101 @@
     return Array.from(agg.values());
   }
 
-  return { findHeaderRowIndex, parseBaseWorkbook };
+  function excelSerialToDate(serial) {
+    // Excel serial 1 = January 1, 1900
+    // Add the serial number of days, with a 16-day offset to account for the system
+    const ms = Date.UTC(1900, 0, 1) + (serial - 1) * 86400000 + 16 * 86400000;
+    return new Date(ms);
+  }
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function ymdFromDate(d) {
+    return {
+      yearMonth: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`,
+      date: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
+    };
+  }
+
+  function parseShippingDate(value) {
+    if (value == null || value === '') return null;
+    if (value instanceof Date) return ymdFromDate(value);
+    if (typeof value === 'number') {
+      // For Excel serial numbers, use UTC methods since they're calendar-based
+      const d = excelSerialToDate(value);
+      return {
+        yearMonth: `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}`,
+        date: `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`,
+      };
+    }
+
+    const s = String(value).trim();
+    let m = s.match(/^(\d{2})\/(\d{2})\/(\d{2})$/); // YY/MM/DD
+    if (m) return ymdFromDate(new Date(2000 + Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+
+    m = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); // YYYY-MM-DD or YYYY/MM/DD
+    if (m) return ymdFromDate(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+
+    return null;
+  }
+
+  function parseMonthlyWorkbook(workbook, mediaMapping) {
+    const rows = sheetToRows(workbook, '売上明細_提出');
+    if (!rows) {
+      throw new Error('シート「売上明細_提出」が見つかりません。月次実績ファイルを確認してください。');
+    }
+    const required = ['出荷日', '媒体名', '販売区分', 'ブランド区分'];
+    const headerIdx = findHeaderRowIndex(rows, required);
+    if (headerIdx === -1) {
+      throw new Error('売上明細_提出シートに必要な列（出荷日・媒体名・販売区分・ブランド区分）が見つかりません。');
+    }
+    const header = rows[headerIdx].map(v => (v == null ? '' : String(v).trim()));
+    const col = name => header.indexOf(name);
+    const idx = {
+      shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), brand: col('ブランド区分'),
+      sales: col('金額'), cost: col('仕入金額'), profit: col('粗利額'),
+    };
+
+    const mapping = require('./mapping.js');
+    const agg = new Map();
+    const unmappedMedia = {};
+
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+      if (String(row[idx.brand]) !== '22') continue;
+
+      const parsedDate = parseShippingDate(row[idx.shipDate]);
+      if (!parsedDate) continue;
+
+      const mapped = mapping.mapMediaToChannel(row[idx.media], mediaMapping);
+      const sales = Number(row[idx.sales]) || 0;
+      const cost = Number(row[idx.cost]) || 0;
+      const profit = Number(row[idx.profit]) || 0;
+
+      if (!mapped.mapped) {
+        const rawName = (row[idx.media] == null ? '' : String(row[idx.media])).trim();
+        if (!unmappedMedia[rawName]) unmappedMedia[rawName] = { count: 0, sales: 0 };
+        unmappedMedia[rawName].count += 1;
+        unmappedMedia[rawName].sales += sales;
+      }
+      if (mapped.channel === null) continue;
+
+      const type = row[idx.type];
+      if (!type) continue;
+
+      const key = `${parsedDate.yearMonth}|${mapped.channel}|${type}`;
+      if (!agg.has(key)) {
+        agg.set(key, { yearMonth: parsedDate.yearMonth, channel: mapped.channel, type: String(type), sales: 0, cost: 0, profit: 0 });
+      }
+      const rec = agg.get(key);
+      rec.sales += sales;
+      rec.cost += cost;
+      rec.profit += profit;
+    }
+
+    return { records: Array.from(agg.values()), unmappedMedia };
+  }
+
+  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook };
 });
