@@ -5,6 +5,9 @@
     root.YoiHibi = Object.assign(root.YoiHibi || {}, factory());
   }
 })(typeof window !== 'undefined' ? window : globalThis, function () {
+  // Environment-aware dependency resolution: works in both Node (require exists) and browser (falls back to globals)
+  const XLSXLib = (typeof require === 'function') ? require('xlsx') : (typeof window !== 'undefined' ? window.XLSX : undefined);
+  const mappingLib = (typeof require === 'function') ? require('./mapping.js') : (typeof window !== 'undefined' ? window.YoiHibi : undefined);
 
   function findHeaderRowIndex(rows, requiredNames) {
     for (let i = 0; i < rows.length; i++) {
@@ -17,7 +20,7 @@
   }
 
   function sheetToRows(workbook, sheetName) {
-    const XLSX = require('xlsx');
+    const XLSX = XLSXLib;
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) return null;
     return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: null });
@@ -119,7 +122,7 @@
       sales: col('金額'), cost: col('仕入金額'), profit: col('粗利額'),
     };
 
-    const mapping = require('./mapping.js');
+    const mapping = mappingLib;
     const agg = new Map();
     const unmappedMedia = {};
 
@@ -201,7 +204,7 @@
       sales: col('金額'), cost: col('仕入金額'), profit: col('粗利額'),
     };
 
-    const mapping = require('./mapping.js');
+    const mapping = mappingLib;
     const agg = new Map();
     const unmappedMedia = {};
 
