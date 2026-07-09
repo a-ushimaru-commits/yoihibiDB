@@ -160,5 +160,87 @@
     return { records: Array.from(agg.values()), unmappedMedia };
   }
 
-  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook };
+  function parseCsv(text) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let inQuotes = false;
+    let i = 0;
+    const n = text.length;
+
+    while (i < n) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          inQuotes = false; i += 1; continue;
+        }
+        field += c; i += 1; continue;
+      }
+      if (c === '"') { inQuotes = true; i += 1; continue; }
+      if (c === ',') { row.push(field); field = ''; i += 1; continue; }
+      if (c === '\r') { i += 1; continue; }
+      if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i += 1; continue; }
+      field += c; i += 1;
+    }
+    if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+    return rows.filter(r => !(r.length === 1 && r[0] === ''));
+  }
+
+  function parseDailyCsv(csvText, mediaMapping) {
+    const rows = parseCsv(csvText);
+    const required = ['出荷日', '媒体名', '販売区分', 'ブランド区分'];
+    const headerIdx = findHeaderRowIndex(rows, required);
+    if (headerIdx === -1) {
+      throw new Error('CSVに必要な列（出荷日・媒体名・販売区分・ブランド区分）が見つかりません。');
+    }
+    const header = rows[headerIdx].map(v => (v == null ? '' : String(v).trim()));
+    const col = name => header.indexOf(name);
+    const idx = {
+      shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), brand: col('ブランド区分'),
+      sales: col('金額'), cost: col('仕入金額'), profit: col('粗利額'),
+    };
+
+    const mapping = require('./mapping.js');
+    const agg = new Map();
+    const unmappedMedia = {};
+
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+      if (String(row[idx.brand]) !== '22') continue;
+
+      const parsedDate = parseShippingDate(row[idx.shipDate]);
+      if (!parsedDate) continue;
+
+      const mapped = mapping.mapMediaToChannel(row[idx.media], mediaMapping);
+      const sales = Number(row[idx.sales]) || 0;
+      const cost = Number(row[idx.cost]) || 0;
+      const profit = Number(row[idx.profit]) || 0;
+
+      if (!mapped.mapped) {
+        const rawName = (row[idx.media] == null ? '' : String(row[idx.media])).trim();
+        if (!unmappedMedia[rawName]) unmappedMedia[rawName] = { count: 0, sales: 0 };
+        unmappedMedia[rawName].count += 1;
+        unmappedMedia[rawName].sales += sales;
+      }
+      if (mapped.channel === null) continue;
+
+      const type = row[idx.type];
+      if (!type) continue;
+
+      const key = `${parsedDate.date}|${mapped.channel}|${type}`;
+      if (!agg.has(key)) {
+        agg.set(key, { yearMonth: parsedDate.yearMonth, date: parsedDate.date, channel: mapped.channel, type: String(type), sales: 0, cost: 0, profit: 0 });
+      }
+      const rec = agg.get(key);
+      rec.sales += sales;
+      rec.cost += cost;
+      rec.profit += profit;
+    }
+
+    return { records: Array.from(agg.values()), unmappedMedia };
+  }
+
+  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv };
 });

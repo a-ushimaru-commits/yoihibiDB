@@ -1,0 +1,47 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { parseCsv, parseDailyCsv } = require('../js/parsers.js');
+
+test('parseCsv handles plain comma-separated rows', () => {
+  const rows = parseCsv('a,b,c\n1,2,3\n');
+  assert.deepEqual(rows, [['a', 'b', 'c'], ['1', '2', '3']]);
+});
+
+test('parseCsv handles quoted fields with embedded commas and escaped quotes', () => {
+  const rows = parseCsv('name,note\n"Sato, Taro","he said ""hi"""\n');
+  assert.deepEqual(rows, [['name', 'note'], ['Sato, Taro', 'he said "hi"']]);
+});
+
+test('parseCsv tolerates trailing newline and CRLF line endings', () => {
+  const rows = parseCsv('a,b\r\n1,2\r\n');
+  assert.deepEqual(rows, [['a', 'b'], ['1', '2']]);
+});
+
+function buildDailyCsv() {
+  const header = '出荷日,媒体名,販売区分,ブランド区分,金額,仕入金額,粗利額';
+  const lines = [
+    header,
+    '26/06/09,よい日々,通常,22,1000,400,600',
+    '26/06/09,よい日々,通常,22,500,200,300',
+    '26/06/10,楽天よい日々,定期,22,2000,800,1200',
+    '26/06/11,謎の新規媒体,通常,22,300,100,200',
+    '26/06/12,よい日々,通常,9,9999,0,0',
+  ];
+  return lines.join('\n') + '\n';
+}
+
+test('parseDailyCsv filters brand 22, maps media, aggregates by date/channel/type', () => {
+  const { records, unmappedMedia } = parseDailyCsv(buildDailyCsv());
+  const day9 = records.find(r => r.date === '2026-06-09' && r.channel === '自社' && r.type === '通常');
+  assert.ok(day9);
+  assert.equal(day9.sales, 1500);
+  assert.equal(day9.yearMonth, '2026-06');
+
+  const day10 = records.find(r => r.date === '2026-06-10' && r.channel === '楽天');
+  assert.equal(day10.sales, 2000);
+
+  const total = records.reduce((s, r) => s + r.sales, 0);
+  assert.equal(total, 1500 + 2000 + 300); // brand-9 row excluded
+
+  assert.ok(unmappedMedia['謎の新規媒体']);
+});
