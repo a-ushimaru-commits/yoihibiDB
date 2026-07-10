@@ -15,9 +15,14 @@
     'Creema': 'その他',
     'メルカリ': 'その他',
     '会報誌': 'その他',
+    // 倉庫移動・本社は内部処理上の記録だが、実データ検証の結果ユーザーの基準となる
+    // 集計(区分②='よい日々')にはこれらの行の売上・粗利も含まれていたため、除外せず
+    // 「その他」として集計に含める（除外すると実績と一致しなくなることを確認済み）
+    '倉庫移動': 'その他',
+    '本社': 'その他',
   };
 
-  const EXCLUDED_MEDIA = ['倉庫移動', '本社'];
+  const EXCLUDED_MEDIA = [];
 
   function mapMediaToChannel(rawName, mappingOverride) {
     const table = Object.assign({}, DEFAULT_MEDIA_MAPPING, mappingOverride || {});

@@ -1,7 +1,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const XLSX = require('xlsx');
-const { parseShippingDate, parseMonthlyWorkbook } = require('../js/parsers.js');
+const { parseShippingDate, parseMonthlyWorkbook, isYoiHibiProductCode } = require('../js/parsers.js');
+
+test('isYoiHibiProductCode matches FH-prefixed codes case-insensitively, rejects others safely', () => {
+  assert.equal(isYoiHibiProductCode('FH0001010101000'), true);
+  assert.equal(isYoiHibiProductCode('fh0002020202000'), true);
+  assert.equal(isYoiHibiProductCode('  FH0003030303000  '), true);
+  assert.equal(isYoiHibiProductCode('GH1234567890123'), false);
+  assert.equal(isYoiHibiProductCode(''), false);
+  assert.equal(isYoiHibiProductCode(null), false);
+  assert.equal(isYoiHibiProductCode(undefined), false);
+});
 
 test('parseShippingDate handles YY/MM/DD strings (2000+YY)', () => {
   const r = parseShippingDate('26/06/09');
@@ -36,7 +46,7 @@ function buildMonthlyWorkbook() {
     ['26/06/10', '楽天よい日々', 'FH', '定期', 'FH0003030303000', 1999, 2000, 800, 1200],
     ['26/06/11', '謎の新規媒体', 'FH', '通常', 'FH0004040404000', 299, 300, 100, 200],
     ['26/06/12', 'よい日々', 'PD', '通常', 'GH1234567890123', 9999, 9999, 0, 0], // non-FH product code, must be excluded
-    ['26/06/13', '倉庫移動', 'FH', '通常', 'FH0005050505000', 0, 0, 0, 0], // excluded media
+    ['26/06/13', '倉庫移動', 'FH', '通常', 'FH0005050505000', 699, 700, 250, 450], // real-data verified: must be INCLUDED (mapped to その他), not excluded
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -56,12 +66,16 @@ test('parseMonthlyWorkbook filters by 商品コード starting with FH (case-ins
   const rakuten = records.find(r => r.channel === '楽天' && r.type === '定期');
   assert.equal(rakuten.sales, 2000);
 
+  // その他 channel combines the unmapped-media row (300) and the 倉庫移動 row (700, mapped to
+  // その他 per real-data verification — it must NOT be excluded, unlike the old ブランド区分 logic)
   const sonota = records.find(r => r.channel === 'その他' && r.type === '通常');
-  assert.equal(sonota.sales, 300);
+  assert.equal(sonota.sales, 1000);
+  assert.equal(sonota.cost, 350);
+  assert.equal(sonota.profit, 650);
 
-  // the non-FH product code row and 倉庫移動 row must not appear anywhere
+  // only the non-FH product code row must be absent
   const total = records.reduce((s, r) => s + r.sales, 0);
-  assert.equal(total, 1500 + 2000 + 300);
+  assert.equal(total, 1500 + 2000 + 1000);
 });
 
 test('parseMonthlyWorkbook reports unmapped media names with count and sales', () => {

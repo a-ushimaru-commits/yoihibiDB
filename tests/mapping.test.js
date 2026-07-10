@@ -19,12 +19,12 @@ test('BtoB(*) and YAHOO* prefixes map regardless of paren style', () => {
   assert.equal(mapMediaToChannel('YAHOO　プライムダイレクト').channel, 'yahoo');
 });
 
-test('excluded media names map to null channel and are marked mapped (not a warning)', () => {
+test('倉庫移動/本社 map to その他 and are marked mapped (not a warning) — real-data verified: excluding them from totals broke reconciliation with the user\'s reference figures by exactly the amount these rows contribute, so they must be counted, not dropped', () => {
   const r1 = mapMediaToChannel('倉庫移動');
-  assert.equal(r1.channel, null);
+  assert.equal(r1.channel, 'その他');
   assert.equal(r1.mapped, true);
   const r2 = mapMediaToChannel('本社');
-  assert.equal(r2.channel, null);
+  assert.equal(r2.channel, 'その他');
   assert.equal(r2.mapped, true);
 });
 
