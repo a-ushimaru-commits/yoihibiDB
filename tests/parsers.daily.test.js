@@ -18,19 +18,22 @@ test('parseCsv tolerates trailing newline and CRLF line endings', () => {
 });
 
 function buildDailyCsv() {
-  const header = '出荷日,媒体名,販売区分,ブランド区分,金額,仕入金額,粗利額';
+  // 商品コード drives brand identification now (replacing the old, incorrect ブランド区分='22' rule),
+  // verified against real user data: 商品コード starting with "FH" matches 区分②='よい日々' row-for-row.
+  // The lite daily CSV export has no 金額合計 column, so 金額 remains the sales figure here.
+  const header = '出荷日,媒体名,販売区分,商品コード,金額,仕入金額,粗利額';
   const lines = [
     header,
-    '26/06/09,よい日々,通常,22,1000,400,600',
-    '26/06/09,よい日々,通常,22,500,200,300',
-    '26/06/10,楽天よい日々,定期,22,2000,800,1200',
-    '26/06/11,謎の新規媒体,通常,22,300,100,200',
-    '26/06/12,よい日々,通常,9,9999,0,0',
+    '26/06/09,よい日々,通常,FH0001010101000,1000,400,600',
+    '26/06/09,よい日々,通常,fh0002020202000,500,200,300', // lowercase "fh" prefix, must still match
+    '26/06/10,楽天よい日々,定期,FH0003030303000,2000,800,1200',
+    '26/06/11,謎の新規媒体,通常,FH0004040404000,300,100,200',
+    '26/06/12,よい日々,通常,GH1234567890123,9999,0,0', // non-FH product code, must be excluded
   ];
   return lines.join('\n') + '\n';
 }
 
-test('parseDailyCsv filters brand 22, maps media, aggregates by date/channel/type', () => {
+test('parseDailyCsv filters by 商品コード starting with FH (case-insensitive), maps media, aggregates by date/channel/type', () => {
   const { records, unmappedMedia } = parseDailyCsv(buildDailyCsv());
   const day9 = records.find(r => r.date === '2026-06-09' && r.channel === '自社' && r.type === '通常');
   assert.ok(day9);
@@ -41,7 +44,7 @@ test('parseDailyCsv filters brand 22, maps media, aggregates by date/channel/typ
   assert.equal(day10.sales, 2000);
 
   const total = records.reduce((s, r) => s + r.sales, 0);
-  assert.equal(total, 1500 + 2000 + 300); // brand-9 row excluded
+  assert.equal(total, 1500 + 2000 + 300); // non-FH product code row excluded
 
   assert.ok(unmappedMedia['謎の新規媒体']);
 });

@@ -105,21 +105,25 @@
     return null;
   }
 
+  function isYoiHibiProductCode(value) {
+    return value != null && String(value).trim().toUpperCase().startsWith('FH');
+  }
+
   function parseMonthlyWorkbook(workbook, mediaMapping) {
     const rows = sheetToRows(workbook, '売上明細_提出');
     if (!rows) {
       throw new Error('シート「売上明細_提出」が見つかりません。月次実績ファイルを確認してください。');
     }
-    const required = ['出荷日', '媒体名', '販売区分', 'ブランド区分'];
+    const required = ['出荷日', '媒体名', '販売区分', '商品コード', '金額合計'];
     const headerIdx = findHeaderRowIndex(rows, required);
     if (headerIdx === -1) {
-      throw new Error('売上明細_提出シートに必要な列（出荷日・媒体名・販売区分・ブランド区分）が見つかりません。');
+      throw new Error('売上明細_提出シートに必要な列（出荷日・媒体名・販売区分・商品コード・金額合計）が見つかりません。');
     }
     const header = rows[headerIdx].map(v => (v == null ? '' : String(v).trim()));
     const col = name => header.indexOf(name);
     const idx = {
-      shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), brand: col('ブランド区分'),
-      sales: col('金額'), cost: col('仕入金額'), profit: col('粗利額'),
+      shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), productCode: col('商品コード'),
+      sales: col('金額合計'), cost: col('仕入金額'), profit: col('粗利額'),
     };
 
     const mapping = mappingLib;
@@ -129,7 +133,7 @@
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i];
       if (!row) continue;
-      if (String(row[idx.brand]) !== '22') continue;
+      if (!isYoiHibiProductCode(row[idx.productCode])) continue;
 
       const parsedDate = parseShippingDate(row[idx.shipDate]);
       if (!parsedDate) continue;
@@ -192,15 +196,15 @@
 
   function parseDailyCsv(csvText, mediaMapping) {
     const rows = parseCsv(csvText);
-    const required = ['出荷日', '媒体名', '販売区分', 'ブランド区分'];
+    const required = ['出荷日', '媒体名', '販売区分', '商品コード'];
     const headerIdx = findHeaderRowIndex(rows, required);
     if (headerIdx === -1) {
-      throw new Error('CSVに必要な列（出荷日・媒体名・販売区分・ブランド区分）が見つかりません。');
+      throw new Error('CSVに必要な列（出荷日・媒体名・販売区分・商品コード）が見つかりません。');
     }
     const header = rows[headerIdx].map(v => (v == null ? '' : String(v).trim()));
     const col = name => header.indexOf(name);
     const idx = {
-      shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), brand: col('ブランド区分'),
+      shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), productCode: col('商品コード'),
       sales: col('金額'), cost: col('仕入金額'), profit: col('粗利額'),
     };
 
@@ -211,7 +215,7 @@
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i];
       if (!row) continue;
-      if (String(row[idx.brand]) !== '22') continue;
+      if (!isYoiHibiProductCode(row[idx.productCode])) continue;
 
       const parsedDate = parseShippingDate(row[idx.shipDate]);
       if (!parsedDate) continue;
@@ -254,5 +258,5 @@
     return 'unknown';
   }
 
-  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType };
+  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode };
 });

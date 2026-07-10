@@ -25,24 +25,19 @@ test('parseShippingDate returns null for unparseable values', () => {
 });
 
 function buildMonthlyWorkbook() {
-  const header = ['出荷日', '媒体名', '事業部', '販売区分', 'ブランド区分'];
+  // 金額 is deliberately WRONG on every row (a decoy) to prove the parser sums 金額合計, not 金額.
+  // 商品コード drives brand identification now (replacing the old, incorrect ブランド区分='22' rule),
+  // verified against real user data: 商品コード starting with "FH" matches 区分②='よい日々' row-for-row.
+  const header = ['出荷日', '媒体名', '事業部', '販売区分', '商品コード', '金額', '金額合計', '仕入金額', '粗利額'];
   const rows = [
     header,
-    ['26/06/09', 'よい日々', 'FH', '通常', '22'],
-    ['26/06/09', 'よい日々', 'FH', '通常', '22'],
-    ['26/06/10', '楽天よい日々', 'FH', '定期', '22'],
-    ['26/06/11', '謎の新規媒体', 'FH', '通常', '22'],
-    ['26/06/12', 'よい日々', 'FH', '通常', '9'], // different brand, must be excluded
-    ['26/06/13', '倉庫移動', 'FH', '通常', '22'], // excluded media
+    ['26/06/09', 'よい日々', 'FH', '通常', 'FH0001010101000', 999, 1000, 400, 600],
+    ['26/06/09', 'よい日々', 'FH', '通常', 'fh0002020202000', 499, 500, 200, 300], // lowercase "fh" prefix, must still match
+    ['26/06/10', '楽天よい日々', 'FH', '定期', 'FH0003030303000', 1999, 2000, 800, 1200],
+    ['26/06/11', '謎の新規媒体', 'FH', '通常', 'FH0004040404000', 299, 300, 100, 200],
+    ['26/06/12', 'よい日々', 'PD', '通常', 'GH1234567890123', 9999, 9999, 0, 0], // non-FH product code, must be excluded
+    ['26/06/13', '倉庫移動', 'FH', '通常', 'FH0005050505000', 0, 0, 0, 0], // excluded media
   ];
-  // 金額/仕入金額/粗利額 columns appended after ブランド区分 to mimic the real 99-col sheet
-  header.push('金額', '仕入金額', '粗利額');
-  rows[1].push(1000, 400, 600);
-  rows[2].push(500, 200, 300);
-  rows[3].push(2000, 800, 1200);
-  rows[4].push(300, 100, 200);
-  rows[5].push(9999, 0, 0);
-  rows[6].push(0, 0, 0);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -50,11 +45,11 @@ function buildMonthlyWorkbook() {
   return wb;
 }
 
-test('parseMonthlyWorkbook filters to brand 22, maps media, aggregates by month/channel/type', () => {
+test('parseMonthlyWorkbook filters by 商品コード starting with FH (case-insensitive), sums 金額合計 not 金額, maps media, aggregates by month/channel/type', () => {
   const { records, unmappedMedia } = parseMonthlyWorkbook(buildMonthlyWorkbook());
   const jisha = records.find(r => r.channel === '自社' && r.type === '通常');
   assert.ok(jisha);
-  assert.equal(jisha.sales, 1500); // 1000 + 500
+  assert.equal(jisha.sales, 1500); // 1000 + 500 (金額合計), NOT 999 + 499 (金額)
   assert.equal(jisha.cost, 600);
   assert.equal(jisha.profit, 900);
 
@@ -64,7 +59,7 @@ test('parseMonthlyWorkbook filters to brand 22, maps media, aggregates by month/
   const sonota = records.find(r => r.channel === 'その他' && r.type === '通常');
   assert.equal(sonota.sales, 300);
 
-  // brand 9 row and 倉庫移動 row must not appear anywhere
+  // the non-FH product code row and 倉庫移動 row must not appear anywhere
   const total = records.reduce((s, r) => s + r.sales, 0);
   assert.equal(total, 1500 + 2000 + 300);
 });
