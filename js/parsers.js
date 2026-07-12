@@ -144,7 +144,7 @@
     return mapping;
   }
 
-  function parseMonthlyWorkbook(workbook, mediaMapping) {
+  function parseMonthlyWorkbook(workbook, mediaMapping, productBrandMapping) {
     const rows = sheetToRows(workbook, '売上明細_提出');
     if (!rows) {
       throw new Error('シート「売上明細_提出」が見つかりません。月次実績ファイルを確認してください。');
@@ -162,8 +162,10 @@
     };
 
     const mapping = mappingLib;
+    const brandMap = productBrandMapping || {};
     const agg = new Map();
     const unmappedMedia = {};
+    const unmappedProducts = {};
 
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i];
@@ -189,9 +191,18 @@
       const type = row[idx.type];
       if (!type) continue;
 
-      const key = `${parsedDate.yearMonth}|${mapped.channel}|${type}`;
+      const productCode = normalizeProductCode(row[idx.productCode]);
+      const hasBrand = Object.prototype.hasOwnProperty.call(brandMap, productCode);
+      const brand = hasBrand ? brandMap[productCode] : '未分類';
+      if (!hasBrand) {
+        if (!unmappedProducts[productCode]) unmappedProducts[productCode] = { count: 0, sales: 0 };
+        unmappedProducts[productCode].count += 1;
+        unmappedProducts[productCode].sales += sales;
+      }
+
+      const key = `${parsedDate.yearMonth}|${mapped.channel}|${type}|${brand}`;
       if (!agg.has(key)) {
-        agg.set(key, { yearMonth: parsedDate.yearMonth, channel: mapped.channel, type: String(type), sales: 0, cost: 0, profit: 0 });
+        agg.set(key, { yearMonth: parsedDate.yearMonth, channel: mapped.channel, type: String(type), brand, sales: 0, cost: 0, profit: 0 });
       }
       const rec = agg.get(key);
       rec.sales += sales;
@@ -199,7 +210,7 @@
       rec.profit += profit;
     }
 
-    return { records: Array.from(agg.values()), unmappedMedia };
+    return { records: Array.from(agg.values()), unmappedMedia, unmappedProducts };
   }
 
   function parseCsv(text) {
@@ -229,7 +240,7 @@
     return rows.filter(r => !(r.length === 1 && r[0] === ''));
   }
 
-  function parseDailyCsv(csvText, mediaMapping) {
+  function parseDailyCsv(csvText, mediaMapping, productBrandMapping) {
     const rows = parseCsv(csvText);
     const required = ['出荷日', '媒体名', '販売区分', '商品コード'];
     const headerIdx = findHeaderRowIndex(rows, required);
@@ -244,8 +255,10 @@
     };
 
     const mapping = mappingLib;
+    const brandMap = productBrandMapping || {};
     const agg = new Map();
     const unmappedMedia = {};
+    const unmappedProducts = {};
 
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i];
@@ -271,9 +284,18 @@
       const type = row[idx.type];
       if (!type) continue;
 
-      const key = `${parsedDate.date}|${mapped.channel}|${type}`;
+      const productCode = normalizeProductCode(row[idx.productCode]);
+      const hasBrand = Object.prototype.hasOwnProperty.call(brandMap, productCode);
+      const brand = hasBrand ? brandMap[productCode] : '未分類';
+      if (!hasBrand) {
+        if (!unmappedProducts[productCode]) unmappedProducts[productCode] = { count: 0, sales: 0 };
+        unmappedProducts[productCode].count += 1;
+        unmappedProducts[productCode].sales += sales;
+      }
+
+      const key = `${parsedDate.date}|${mapped.channel}|${type}|${brand}`;
       if (!agg.has(key)) {
-        agg.set(key, { yearMonth: parsedDate.yearMonth, date: parsedDate.date, channel: mapped.channel, type: String(type), sales: 0, cost: 0, profit: 0 });
+        agg.set(key, { yearMonth: parsedDate.yearMonth, date: parsedDate.date, channel: mapped.channel, type: String(type), brand, sales: 0, cost: 0, profit: 0 });
       }
       const rec = agg.get(key);
       rec.sales += sales;
@@ -281,7 +303,7 @@
       rec.profit += profit;
     }
 
-    return { records: Array.from(agg.values()), unmappedMedia };
+    return { records: Array.from(agg.values()), unmappedMedia, unmappedProducts };
   }
 
   function detectFileType(fileName, sheetNames) {
