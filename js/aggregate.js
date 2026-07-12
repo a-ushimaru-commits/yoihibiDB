@@ -93,8 +93,11 @@
     return rows;
   }
 
-  function getBrandMonthlyPivot(state) {
-    const allRecords = (state.baseRecords || []).concat(state.monthlyRecords || []);
+  function getBrandMonthlyPivot(state, filter) {
+    let allRecords = (state.baseRecords || []).concat(state.monthlyRecords || []);
+    if (filter && filter.channel) {
+      allRecords = filterRecords(allRecords, { channel: filter.channel });
+    }
     const months = Array.from(new Set(allRecords.map(r => r.yearMonth))).sort();
 
     const brandSales = new Map();

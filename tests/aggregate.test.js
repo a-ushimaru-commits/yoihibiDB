@@ -171,6 +171,28 @@ test('getBrandMonthlyPivot returns empty months/brands/rows when both record set
   assert.deepEqual(pivot, { months: [], brands: [], rows: [] });
 });
 
+test('getBrandMonthlyPivot with a channel filter restricts months/brands/totals/byBrand to only that channel\'s records', () => {
+  const pivot = getBrandMonthlyPivot(pivotSampleState(), { channel: '自社' });
+  // MCTオイル only ever appears on TV, so it's excluded entirely once filtered to 自社
+  assert.deepEqual(pivot.brands, ['MSMパウダー', '未分類']);
+  assert.deepEqual(pivot.months, ['2025-06', '2026-06']);
+
+  const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
+  assert.equal(june2025.totalTeikiSales, 0);
+  assert.equal(june2025.totalTsujoSales, 200);
+  assert.deepEqual(june2025.byBrand['MSMパウダー'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 });
+  assert.deepEqual(june2025.byBrand['未分類'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 });
+
+  const june2026 = pivot.rows.find(r => r.yearMonth === '2026-06');
+  assert.deepEqual(june2026.byBrand['未分類'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 10, tsujoProfit: 5 });
+});
+
+test('getBrandMonthlyPivot with no filter argument behaves exactly as before (backward compatible)', () => {
+  const withoutFilter = getBrandMonthlyPivot(pivotSampleState());
+  const withEmptyFilter = getBrandMonthlyPivot(pivotSampleState(), {});
+  assert.deepEqual(withoutFilter, withEmptyFilter);
+});
+
 test('getChannelMonthlyPivot spans both 1期 and 2期 as one continuous month list, with all 7 channels in the fixed CHANNELS order', () => {
   const pivot = getChannelMonthlyPivot(pivotSampleState());
   assert.deepEqual(pivot.months, ['2025-06', '2026-06']);
