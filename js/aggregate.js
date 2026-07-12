@@ -130,6 +130,26 @@
     return { months, brands, rows };
   }
 
+  function getBrandMonthlySeries(state, selection) {
+    const pivot = getBrandMonthlyPivot(state);
+    const rows = pivot.rows.map(row => {
+      if (!selection || selection === 'ALL') {
+        return {
+          yearMonth: row.yearMonth,
+          teikiSales: row.totalTeikiSales, teikiProfit: row.totalTeikiProfit,
+          tsujoSales: row.totalTsujoSales, tsujoProfit: row.totalTsujoProfit,
+        };
+      }
+      const cell = row.byBrand[selection] || { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 };
+      return {
+        yearMonth: row.yearMonth,
+        teikiSales: cell.teikiSales, teikiProfit: cell.teikiProfit,
+        tsujoSales: cell.tsujoSales, tsujoProfit: cell.tsujoProfit,
+      };
+    });
+    return { brands: pivot.brands, rows };
+  }
+
   function getDailyCumulativeSeries(state, yearMonth) {
     const daily = filterRecords(state.dailyRecords, { yearMonth });
     const nDays = daysInMonth(yearMonth);
@@ -182,6 +202,6 @@
   return {
     CHANNELS, shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
     getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend,
-    getBrandMonthlyPivot,
+    getBrandMonthlyPivot, getBrandMonthlySeries,
   };
 });

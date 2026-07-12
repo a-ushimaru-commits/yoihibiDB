@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {
   shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
   getMonthlyComparison, getChannelTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandTable,
-  getBrandMonthlyPivot,
+  getBrandMonthlyPivot, getBrandMonthlySeries,
 } = require('../js/aggregate.js');
 
 test('shiftYearMonth moves the year and keeps the month', () => {
@@ -169,4 +169,25 @@ test('getBrandMonthlyPivot zero-fills a brand with no data in a given month, per
 test('getBrandMonthlyPivot returns empty months/brands/rows when both record sets are empty', () => {
   const pivot = getBrandMonthlyPivot({ baseRecords: [], monthlyRecords: [] });
   assert.deepEqual(pivot, { months: [], brands: [], rows: [] });
+});
+
+test('getBrandMonthlySeries with selection "ALL" returns each month\'s whole-company totals renamed to teiki/tsujo fields', () => {
+  const series = getBrandMonthlySeries(pivotSampleState(), 'ALL');
+  assert.deepEqual(series.brands, ['MCTオイル', 'MSMパウダー', '未分類']);
+  const june2025 = series.rows.find(r => r.yearMonth === '2025-06');
+  assert.deepEqual(june2025, { yearMonth: '2025-06', teikiSales: 100, teikiProfit: 60, tsujoSales: 250, tsujoProfit: 150 });
+});
+
+test("getBrandMonthlySeries with a brand name returns that brand's month series, zero-filled where absent", () => {
+  const series = getBrandMonthlySeries(pivotSampleState(), 'MSMパウダー');
+  const june2025 = series.rows.find(r => r.yearMonth === '2025-06');
+  const june2026 = series.rows.find(r => r.yearMonth === '2026-06');
+  assert.deepEqual(june2025, { yearMonth: '2025-06', teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 });
+  assert.deepEqual(june2026, { yearMonth: '2026-06', teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 });
+});
+
+test('getBrandMonthlySeries defaults to ALL when selection is omitted', () => {
+  const withoutSelection = getBrandMonthlySeries(pivotSampleState());
+  const allSelection = getBrandMonthlySeries(pivotSampleState(), 'ALL');
+  assert.deepEqual(withoutSelection, allSelection);
 });
