@@ -31,16 +31,17 @@
     if (!rows) {
       throw new Error('シート「詳細明細」が見つかりません。1期実績ファイルを確認してください。');
     }
-    const required = ['月', '販売区分', '定期/通常', '売上', '仕入額', '粗利'];
+    const required = ['月', '販売区分', 'よい日々', '定期/通常', '売上', '仕入額', '粗利'];
     const headerIdx = findHeaderRowIndex(rows, required);
     if (headerIdx === -1) {
-      throw new Error('詳細明細シートに必要な列（月・販売区分・定期/通常・売上・仕入額・粗利）が見つかりません。');
+      throw new Error('詳細明細シートに必要な列（月・販売区分・よい日々・定期/通常・売上・仕入額・粗利）が見つかりません。');
     }
     const header = rows[headerIdx].map(v => (v == null ? '' : String(v).trim()));
     const col = name => header.indexOf(name);
     const idx = {
       month: col('月'),
       channel: col('販売区分'),
+      brand: col('よい日々'),
       type: col('定期/通常'),
       sales: col('売上'),
       cost: col('仕入額'),
@@ -56,9 +57,11 @@
       const channel = row[idx.channel];
       const type = row[idx.type];
       if (!channel || !type) continue;
-      const key = `${yearMonth}|${channel}|${type}`;
+      const brandCell = row[idx.brand];
+      const brand = (brandCell == null || String(brandCell).trim() === '') ? null : String(brandCell).trim();
+      const key = `${yearMonth}|${channel}|${type}|${brand}`;
       if (!agg.has(key)) {
-        agg.set(key, { yearMonth: String(yearMonth), channel: String(channel), type: String(type), sales: 0, cost: 0, profit: 0 });
+        agg.set(key, { yearMonth: String(yearMonth), channel: String(channel), type: String(type), brand, sales: 0, cost: 0, profit: 0 });
       }
       const rec = agg.get(key);
       rec.sales += Number(row[idx.sales]) || 0;
