@@ -38,15 +38,17 @@ function buildMonthlyWorkbook() {
   // 金額 is deliberately WRONG on every row (a decoy) to prove the parser sums 金額合計, not 金額.
   // 商品コード drives brand identification now (replacing the old, incorrect ブランド区分='22' rule),
   // verified against real user data: 商品コード starting with "FH" matches 区分②='よい日々' row-for-row.
+  // 販売区分 is deliberately the OPPOSITE of what 商品名 says on every row, to prove 定期/通常 is now
+  // decided purely by whether 商品名 contains "定期" -- the 販売区分 column is no longer read at all.
   const header = ['出荷日', '媒体名', '事業部', '販売区分', '商品コード', '商品名', '金額', '金額合計', '仕入金額', '粗利額'];
   const rows = [
     header,
-    ['26/06/09', 'よい日々', 'FH', '通常', 'FH0001010101000', 'ﾌﾛｰ･ｴｯｾﾝｽ+ ﾘｷｯﾄﾞ/500ml', 999, 1000, 400, 600], // mapped to MCTオイル
-    ['26/06/09', 'よい日々', 'FH', '通常', 'fh0002020202000', 'MSMﾊﾟｳﾀﾞｰ /60包', 499, 500, 200, 300], // lowercase "fh" prefix, mapped to MSMパウダー
-    ['26/06/10', '楽天よい日々', 'FH', '定期', 'FH0003030303000', '謎の新商品/500ml', 1999, 2000, 800, 1200], // not in mapping -> 未分類
-    ['26/06/11', '謎の新規媒体', 'FH', '通常', 'FH0004040404000', '謎の新商品/500ml', 299, 300, 100, 200],
+    ['26/06/09', 'よい日々', 'FH', '定期', 'FH0001010101000', 'ﾌﾛｰ･ｴｯｾﾝｽ+ ﾘｷｯﾄﾞ/500ml', 999, 1000, 400, 600], // mapped to MCTオイル
+    ['26/06/09', 'よい日々', 'FH', '定期', 'fh0002020202000', 'MSMﾊﾟｳﾀﾞｰ /60包', 499, 500, 200, 300], // lowercase "fh" prefix, mapped to MSMパウダー
+    ['26/06/10', '楽天よい日々', 'FH', '通常', 'FH0003030303000', '【定期】謎の新商品/500ml', 1999, 2000, 800, 1200], // not in mapping -> 未分類
+    ['26/06/11', '謎の新規媒体', 'FH', '定期', 'FH0004040404000', '謎の新商品/500ml', 299, 300, 100, 200],
     ['26/06/12', 'よい日々', 'PD', '通常', 'GH1234567890123', '源喜の一粒', 9999, 9999, 0, 0], // non-FH product code, must be excluded
-    ['26/06/13', '倉庫移動', 'FH', '通常', 'FH0005050505000', 'ﾍﾞﾙﾒ/700g', 699, 700, 250, 450], // real-data verified: must be INCLUDED (mapped to その他), not excluded
+    ['26/06/13', '倉庫移動', 'FH', '定期', 'FH0005050505000', 'ﾍﾞﾙﾒ/700g', 699, 700, 250, 450], // real-data verified: must be INCLUDED (mapped to その他), not excluded
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -106,7 +108,7 @@ test('parseMonthlyWorkbook reports unmapped product codes with count, sales, and
   assert.ok(unmappedProducts['FH0003030303000']);
   assert.equal(unmappedProducts['FH0003030303000'].count, 1);
   assert.equal(unmappedProducts['FH0003030303000'].sales, 2000);
-  assert.equal(unmappedProducts['FH0003030303000'].productName, '謎の新商品/500ml');
+  assert.equal(unmappedProducts['FH0003030303000'].productName, '【定期】謎の新商品/500ml');
   // rows already mapped to a real brand must NOT appear as unmapped
   assert.equal('FH0001010101000' in unmappedProducts, false);
 });
@@ -116,6 +118,24 @@ test('parseMonthlyWorkbook reports unmapped media names with count and sales', (
   assert.ok(unmappedMedia['謎の新規媒体']);
   assert.equal(unmappedMedia['謎の新規媒体'].count, 1);
   assert.equal(unmappedMedia['謎の新規媒体'].sales, 300);
+});
+
+test('parseMonthlyWorkbook decides 定期/通常 from 商品名 (containing "定期"), ignoring 販売区分 entirely', () => {
+  const wb = XLSX.utils.book_new();
+  const header = ['出荷日', '媒体名', '販売区分', '商品コード', '商品名', '金額合計', '仕入金額', '粗利額'];
+  const rows = [
+    header,
+    ['26/06/09', 'よい日々', '通常', 'FH0006060606000', '【定期】特選セット/1kg', 1000, 400, 600], // 販売区分 says 通常, but name has 定期
+    ['26/06/09', 'よい日々', '定期', 'FH0007070707000', '単品セット/1kg', 500, 200, 300], // 販売区分 says 定期, but name has no 定期
+    ['26/06/09', 'よい日々', '通常', 'FH0008080808000', '', 200, 80, 120], // blank 商品名 -> defaults to 通常
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), '売上明細_提出');
+
+  const { records } = parseMonthlyWorkbook(wb);
+  const teiki = records.find(r => r.type === '定期');
+  const tsujo = records.find(r => r.type === '通常');
+  assert.equal(teiki.sales, 1000); // only the 【定期】-named row
+  assert.equal(tsujo.sales, 500 + 200); // the other two, despite one saying 販売区分='定期'
 });
 
 test('parseMonthlyWorkbook throws a clear error when 売上明細_提出 sheet is missing', () => {

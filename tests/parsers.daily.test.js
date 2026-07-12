@@ -21,13 +21,15 @@ function buildDailyCsv() {
   // 商品コード drives brand identification now (replacing the old, incorrect ブランド区分='22' rule),
   // verified against real user data: 商品コード starting with "FH" matches 区分②='よい日々' row-for-row.
   // The lite daily CSV export has no 金額合計 column, so 金額 remains the sales figure here.
+  // 販売区分 is deliberately the OPPOSITE of what 商品名 says on every row, to prove 定期/通常 is now
+  // decided purely by whether 商品名 contains "定期" -- the 販売区分 column is no longer read at all.
   const header = '出荷日,媒体名,販売区分,商品コード,商品名,金額,仕入金額,粗利額';
   const lines = [
     header,
-    '26/06/09,よい日々,通常,FH0001010101000,ﾌﾛｰ･ｴｯｾﾝｽ+ ﾘｷｯﾄﾞ/500ml,1000,400,600', // mapped to MCTオイル
-    '26/06/09,よい日々,通常,fh0002020202000,MSMﾊﾟｳﾀﾞｰ /60包,500,200,300', // lowercase "fh" prefix, mapped to MSMパウダー
-    '26/06/10,楽天よい日々,定期,FH0003030303000,謎の新商品/500ml,2000,800,1200', // not in mapping -> 未分類
-    '26/06/11,謎の新規媒体,通常,FH0004040404000,謎の新商品/500ml,300,100,200',
+    '26/06/09,よい日々,定期,FH0001010101000,ﾌﾛｰ･ｴｯｾﾝｽ+ ﾘｷｯﾄﾞ/500ml,1000,400,600', // mapped to MCTオイル
+    '26/06/09,よい日々,定期,fh0002020202000,MSMﾊﾟｳﾀﾞｰ /60包,500,200,300', // lowercase "fh" prefix, mapped to MSMパウダー
+    '26/06/10,楽天よい日々,通常,FH0003030303000,【定期】謎の新商品/500ml,2000,800,1200', // not in mapping -> 未分類
+    '26/06/11,謎の新規媒体,定期,FH0004040404000,謎の新商品/500ml,300,100,200',
     '26/06/12,よい日々,通常,GH1234567890123,源喜の一粒,9999,0,0', // non-FH product code, must be excluded
   ];
   return lines.join('\n') + '\n';
@@ -66,6 +68,21 @@ test('parseDailyCsv attaches brand from productBrandMapping and reports unmapped
 
   assert.ok(unmappedProducts['FH0003030303000']);
   assert.equal(unmappedProducts['FH0003030303000'].sales, 2000);
-  assert.equal(unmappedProducts['FH0003030303000'].productName, '謎の新商品/500ml');
+  assert.equal(unmappedProducts['FH0003030303000'].productName, '【定期】謎の新商品/500ml');
   assert.equal('FH0001010101000' in unmappedProducts, false);
+});
+
+test('parseDailyCsv decides 定期/通常 from 商品名 (containing "定期"), ignoring 販売区分 entirely', () => {
+  const csv = [
+    '出荷日,媒体名,販売区分,商品コード,商品名,金額,仕入金額,粗利額',
+    '26/06/09,よい日々,通常,FH0006060606000,【定期】特選セット/1kg,1000,400,600', // 販売区分 says 通常, but name has 定期
+    '26/06/09,よい日々,定期,FH0007070707000,単品セット/1kg,500,200,300', // 販売区分 says 定期, but name has no 定期
+    '26/06/09,よい日々,通常,FH0008080808000,,200,80,120', // blank 商品名 -> defaults to 通常
+  ].join('\n') + '\n';
+
+  const { records } = parseDailyCsv(csv);
+  const teiki = records.find(r => r.type === '定期');
+  const tsujo = records.find(r => r.type === '通常');
+  assert.equal(teiki.sales, 1000); // only the 【定期】-named row
+  assert.equal(tsujo.sales, 500 + 200); // the other two, despite one saying 販売区分='定期'
 });

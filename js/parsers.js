@@ -116,6 +116,10 @@
     return (value == null ? '' : String(value).trim().toUpperCase());
   }
 
+  function typeFromProductName(productName) {
+    return productName.includes('定期') ? '定期' : '通常';
+  }
+
   function parseBrandLookup(workbook) {
     const sheetName = workbook.SheetNames[0];
     const rows = sheetToRows(workbook, sheetName);
@@ -178,15 +182,15 @@
     if (!rows) {
       throw new Error('シート「売上明細_提出」が見つかりません。月次実績ファイルを確認してください。');
     }
-    const required = ['出荷日', '媒体名', '販売区分', '商品コード', '金額合計'];
+    const required = ['出荷日', '媒体名', '商品コード', '商品名', '金額合計'];
     const headerIdx = findHeaderRowIndex(rows, required);
     if (headerIdx === -1) {
-      throw new Error('売上明細_提出シートに必要な列（出荷日・媒体名・販売区分・商品コード・金額合計）が見つかりません。');
+      throw new Error('売上明細_提出シートに必要な列（出荷日・媒体名・商品コード・商品名・金額合計）が見つかりません。');
     }
     const header = rows[headerIdx].map(v => (v == null ? '' : String(v).trim()));
     const col = name => header.indexOf(name);
     const idx = {
-      shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), productCode: col('商品コード'),
+      shipDate: col('出荷日'), media: col('媒体名'), productCode: col('商品コード'),
       productName: col('商品名'),
       sales: col('金額合計'), cost: col('仕入金額'), profit: col('粗利額'),
     };
@@ -218,15 +222,14 @@
       }
       if (mapped.channel === null) continue;
 
-      const type = row[idx.type];
-      if (!type) continue;
+      const productName = row[idx.productName] == null ? '' : String(row[idx.productName]).trim();
+      const type = typeFromProductName(productName);
 
       const productCode = normalizeProductCode(row[idx.productCode]);
       const hasBrand = Object.prototype.hasOwnProperty.call(brandMap, productCode);
       const brand = hasBrand ? brandMap[productCode] : '未分類';
       if (!hasBrand) {
         if (!unmappedProducts[productCode]) {
-          const productName = idx.productName === -1 || row[idx.productName] == null ? '' : String(row[idx.productName]).trim();
           unmappedProducts[productCode] = { count: 0, sales: 0, productName };
         }
         unmappedProducts[productCode].count += 1;
@@ -275,15 +278,15 @@
 
   function parseDailyCsv(csvText, mediaMapping, productBrandMapping) {
     const rows = parseCsv(csvText);
-    const required = ['出荷日', '媒体名', '販売区分', '商品コード'];
+    const required = ['出荷日', '媒体名', '商品コード', '商品名'];
     const headerIdx = findHeaderRowIndex(rows, required);
     if (headerIdx === -1) {
-      throw new Error('CSVに必要な列（出荷日・媒体名・販売区分・商品コード）が見つかりません。');
+      throw new Error('CSVに必要な列（出荷日・媒体名・商品コード・商品名）が見つかりません。');
     }
     const header = rows[headerIdx].map(v => (v == null ? '' : String(v).trim()));
     const col = name => header.indexOf(name);
     const idx = {
-      shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), productCode: col('商品コード'),
+      shipDate: col('出荷日'), media: col('媒体名'), productCode: col('商品コード'),
       productName: col('商品名'),
       sales: col('金額'), cost: col('仕入金額'), profit: col('粗利額'),
     };
@@ -315,15 +318,14 @@
       }
       if (mapped.channel === null) continue;
 
-      const type = row[idx.type];
-      if (!type) continue;
+      const productName = row[idx.productName] == null ? '' : String(row[idx.productName]).trim();
+      const type = typeFromProductName(productName);
 
       const productCode = normalizeProductCode(row[idx.productCode]);
       const hasBrand = Object.prototype.hasOwnProperty.call(brandMap, productCode);
       const brand = hasBrand ? brandMap[productCode] : '未分類';
       if (!hasBrand) {
         if (!unmappedProducts[productCode]) {
-          const productName = idx.productName === -1 || row[idx.productName] == null ? '' : String(row[idx.productName]).trim();
           unmappedProducts[productCode] = { count: 0, sales: 0, productName };
         }
         unmappedProducts[productCode].count += 1;
