@@ -1,9 +1,8 @@
 (function () {
-  const { mapMediaToChannel } = window.YoiHibi;
-  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, detectFileType } = window.YoiHibi;
+  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, detectFileType } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
-  const { getMonthlyComparison, getChannelTable, getDailyCumulativeSeries, getMonthlyTrend } = window.YoiHibi;
-  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML } = window.YoiHibi;
+  const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend } = window.YoiHibi;
+  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML } = window.YoiHibi;
 
   const store = createStore(window.localStorage);
   let trendChart = null;
@@ -40,19 +39,25 @@
         const records = parseBaseWorkbook(workbook);
         store.setBaseRecords(records);
         showStatus(`1期ベース実績を取込みました（${records.length}件）`);
+      } else if (type === 'brandLookup') {
+        const mapping = parseBrandLookup(workbook);
+        store.setProductBrandMapping(mapping);
+        showStatus(`商品コード→ブランド対応表を取込みました（${Object.keys(mapping).length}件）`);
       } else if (type === 'monthly') {
-        const { records, unmappedMedia } = parseMonthlyWorkbook(workbook, store.getState().mediaMapping);
+        const { records, unmappedMedia, unmappedProducts } = parseMonthlyWorkbook(workbook, store.getState().mediaMapping, store.getState().productBrandMapping);
         const months = Array.from(new Set(records.map(r => r.yearMonth)));
         months.forEach(ym => store.upsertMonthlyRecords(ym, records.filter(r => r.yearMonth === ym)));
         showStatus(`月次実績を取込みました（${records.length}件）`);
         showWarnings(unmappedMedia);
+        showBrandWarnings(unmappedProducts);
       } else if (type === 'daily') {
         const text = decodeShiftJis(buffer);
-        const { records, unmappedMedia } = parseDailyCsv(text, store.getState().mediaMapping);
+        const { records, unmappedMedia, unmappedProducts } = parseDailyCsv(text, store.getState().mediaMapping, store.getState().productBrandMapping);
         const months = Array.from(new Set(records.map(r => r.yearMonth)));
         months.forEach(ym => store.upsertDailyRecords(ym, records.filter(r => r.yearMonth === ym)));
         showStatus(`日次売上を取込みました（${records.length}件）`);
         showWarnings(unmappedMedia);
+        showBrandWarnings(unmappedProducts);
       } else {
         showStatus(`ファイル種別を判定できませんでした: ${file.name}`, true);
         return;
@@ -76,6 +81,30 @@
     el('warnings').innerHTML = renderMappingWarningsHTML(unmappedMedia);
   }
 
+  function showBrandWarnings(unmappedProducts) {
+    el('brandWarnings').innerHTML = renderProductBrandWarningsHTML(unmappedProducts);
+    setupBrandAssignForm();
+  }
+
+  function setupBrandAssignForm() {
+    const form = document.getElementById('brandAssignForm');
+    if (!form) return;
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const inputs = form.querySelectorAll('input[data-product-code]');
+      const overrides = {};
+      inputs.forEach(input => {
+        const value = input.value.trim();
+        if (value) overrides[input.getAttribute('data-product-code')] = value;
+      });
+      if (Object.keys(overrides).length === 0) return;
+      const merged = Object.assign({}, store.getState().productBrandMapping, overrides);
+      store.setProductBrandMapping(merged);
+      showStatus('ブランドの割り当てを保存しました。対象月の月次実績／日次売上ファイルを再取込みすると反映されます。');
+      el('brandWarnings').innerHTML = '';
+    });
+  }
+
   function refreshMonthOptions() {
     const state = store.getState();
     const months = Array.from(new Set(state.monthlyRecords.map(r => r.yearMonth))).sort();
@@ -93,6 +122,7 @@
 
     el('kpiRow').innerHTML = renderKpiCardsHTML(getMonthlyComparison(state, yearMonth));
     el('channelTable').innerHTML = renderChannelTableHTML(getChannelTable(state, yearMonth));
+    el('brandTable').innerHTML = renderBrandTableHTML(getBrandTable(state, yearMonth));
 
     renderTrendChart(getMonthlyTrend(state));
     renderDailyChart(getDailyCumulativeSeries(state, yearMonth));

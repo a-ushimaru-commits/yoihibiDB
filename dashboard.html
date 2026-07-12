@@ -9,11 +9,12 @@
 <h1>よい日々 売上進捗ダッシュボード</h1>
 
 <div id="dropzone" class="dropzone">
-  ここに1期実績xlsx／月次実績xlsx／日次売上csvをドラッグ&ドロップ、または
+  ここに1期実績xlsx／月次実績xlsx／日次売上csv／商品コード→ブランド対応表xlsxをドラッグ&ドロップ、または
   <input type="file" id="fileInput" multiple accept=".xlsx,.csv">
 </div>
 <p id="status"></p>
 <div id="warnings"></div>
+<div id="brandWarnings"></div>
 
 <div class="month-selector">
   対象月:
@@ -28,6 +29,8 @@
 </div>
 
 <div id="channelTable"></div>
+<h2>ブランド別</h2>
+<div id="brandTable"></div>
 
 <details class="settings-panel">
   <summary>設定</summary>
