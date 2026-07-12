@@ -112,6 +112,38 @@
     return value != null && String(value).trim().toUpperCase().startsWith('FH');
   }
 
+  function normalizeProductCode(value) {
+    return (value == null ? '' : String(value).trim().toUpperCase());
+  }
+
+  function parseBrandLookup(workbook) {
+    const sheetName = workbook.SheetNames[0];
+    const rows = sheetToRows(workbook, sheetName);
+    if (!rows) {
+      throw new Error('商品コード→ブランド対応表のシートが読み込めません。');
+    }
+    const required = ['商品コード', '商品細分'];
+    const headerIdx = findHeaderRowIndex(rows, required);
+    if (headerIdx === -1) {
+      throw new Error('分解詳細リストに必要な列（商品コード・商品細分）が見つかりません。');
+    }
+    const header = rows[headerIdx].map(v => (v == null ? '' : String(v).trim()));
+    const col = name => header.indexOf(name);
+    const idx = { productCode: col('商品コード'), brand: col('商品細分') };
+
+    const mapping = {};
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const code = normalizeProductCode(row[idx.productCode]);
+      const brand = row[idx.brand];
+      if (code === '') continue;
+      if (brand == null || String(brand).trim() === '') continue;
+      mapping[code] = String(brand).trim();
+    }
+    return mapping;
+  }
+
   function parseMonthlyWorkbook(workbook, mediaMapping) {
     const rows = sheetToRows(workbook, '売上明細_提出');
     if (!rows) {
@@ -255,11 +287,12 @@
   function detectFileType(fileName, sheetNames) {
     const name = fileName || '';
     const sheets = sheetNames || [];
+    if (/^分解詳細リスト/.test(name)) return 'brandLookup';
     if (/^粗利分析_よい日々1期/.test(name) || sheets.includes('詳細明細')) return 'base';
     if (/^商品別収益/.test(name) || sheets.includes('売上明細_提出')) return 'monthly';
     if (/\.csv$/i.test(name) || /^受注_売上一覧表/.test(name)) return 'daily';
     return 'unknown';
   }
 
-  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode };
+  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode, parseBrandLookup };
 });
