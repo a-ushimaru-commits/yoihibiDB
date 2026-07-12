@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML } = require('../js/ui.js');
+const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML } = require('../js/ui.js');
 
 test('formatYen adds yen sign and thousands separators, rounds to integer', () => {
   assert.equal(formatYen(1234567.8), '¥1,234,568');
@@ -41,4 +41,29 @@ test('renderMappingWarningsHTML lists unmapped media names with counts, empty st
   assert.match(html, /謎の媒体/);
   assert.match(html, /3/);
   assert.equal(renderMappingWarningsHTML({}), '');
+});
+
+test('renderBrandTableHTML emits one row per brand with sales/profit/profitRate/salesYoY', () => {
+  const html = renderBrandTableHTML([
+    { brand: 'MCTオイル', sales: 1000, profit: 400, profitRate: 0.4, salesYoY: 0.2 },
+    { brand: 'MSMパウダー', sales: 500, profit: 200, profitRate: 0.4, salesYoY: null },
+  ]);
+  assert.match(html, /<table/);
+  assert.match(html, /MCTオイル/);
+  assert.match(html, /MSMパウダー/);
+  assert.match(html, /N\/A/);
+});
+
+test('renderBrandTableHTML shows an empty-state message instead of a table when there are no brand rows', () => {
+  const html = renderBrandTableHTML([]);
+  assert.doesNotMatch(html, /<table/);
+  assert.match(html, /ブランド別データがありません/);
+});
+
+test('renderProductBrandWarningsHTML lists unmapped product codes with an assignable input, empty string when none', () => {
+  const html = renderProductBrandWarningsHTML({ 'FH0009999999999': { count: 3, sales: 4500 } });
+  assert.match(html, /FH0009999999999/);
+  assert.match(html, /data-product-code="FH0009999999999"/);
+  assert.match(html, /<form id="brandAssignForm"/);
+  assert.equal(renderProductBrandWarningsHTML({}), '');
 });
