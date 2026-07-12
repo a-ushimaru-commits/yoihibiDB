@@ -69,10 +69,25 @@ test('renderProductBrandWarningsHTML falls back to a free-text input when no kno
 });
 
 test('renderProductBrandWarningsHTML renders a <select> of known brands plus a "new brand" text fallback', () => {
-  const html = renderProductBrandWarningsHTML({ 'FH0009999999999': { count: 3, sales: 4500 } }, ['MCTオイル', 'MSMパウダー']);
+  const html = renderProductBrandWarningsHTML({ 'FH0009999999999': { count: 3, sales: 4500, productName: 'テスト商品' } }, ['MCTオイル', 'MSMパウダー']);
   assert.match(html, /<select data-product-code="FH0009999999999">/);
   assert.match(html, /<option value="MCTオイル">MCTオイル<\/option>/);
   assert.match(html, /<option value="MSMパウダー">MSMパウダー<\/option>/);
   assert.match(html, /data-product-code-new="FH0009999999999"/);
   assert.equal(renderProductBrandWarningsHTML({}, ['MCTオイル']), '');
+});
+
+test('renderProductBrandWarningsHTML shows the product name alongside the product code', () => {
+  const html = renderProductBrandWarningsHTML({ 'FH0009999999999': { count: 3, sales: 4500, productName: 'テスト商品/500ml' } }, []);
+  assert.match(html, /テスト商品\/500ml/);
+});
+
+test('renderProductBrandWarningsHTML pre-selects a guessed brand in the <select> when one is given', () => {
+  const html = renderProductBrandWarningsHTML(
+    { 'FH0009999999999': { count: 3, sales: 4500, productName: 'テスト商品' } },
+    ['MCTオイル', 'MSMパウダー'],
+    { 'FH0009999999999': 'MSMパウダー' },
+  );
+  assert.match(html, /<option value="MSMパウダー" selected>MSMパウダー<\/option>/);
+  assert.match(html, /<option value="MCTオイル">MCTオイル<\/option>/); // the non-guessed option has no selected attribute
 });

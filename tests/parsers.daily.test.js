@@ -21,14 +21,14 @@ function buildDailyCsv() {
   // 商品コード drives brand identification now (replacing the old, incorrect ブランド区分='22' rule),
   // verified against real user data: 商品コード starting with "FH" matches 区分②='よい日々' row-for-row.
   // The lite daily CSV export has no 金額合計 column, so 金額 remains the sales figure here.
-  const header = '出荷日,媒体名,販売区分,商品コード,金額,仕入金額,粗利額';
+  const header = '出荷日,媒体名,販売区分,商品コード,商品名,金額,仕入金額,粗利額';
   const lines = [
     header,
-    '26/06/09,よい日々,通常,FH0001010101000,1000,400,600', // mapped to MCTオイル
-    '26/06/09,よい日々,通常,fh0002020202000,500,200,300', // lowercase "fh" prefix, mapped to MSMパウダー
-    '26/06/10,楽天よい日々,定期,FH0003030303000,2000,800,1200', // not in mapping -> 未分類
-    '26/06/11,謎の新規媒体,通常,FH0004040404000,300,100,200',
-    '26/06/12,よい日々,通常,GH1234567890123,9999,0,0', // non-FH product code, must be excluded
+    '26/06/09,よい日々,通常,FH0001010101000,ﾌﾛｰ･ｴｯｾﾝｽ+ ﾘｷｯﾄﾞ/500ml,1000,400,600', // mapped to MCTオイル
+    '26/06/09,よい日々,通常,fh0002020202000,MSMﾊﾟｳﾀﾞｰ /60包,500,200,300', // lowercase "fh" prefix, mapped to MSMパウダー
+    '26/06/10,楽天よい日々,定期,FH0003030303000,謎の新商品/500ml,2000,800,1200', // not in mapping -> 未分類
+    '26/06/11,謎の新規媒体,通常,FH0004040404000,謎の新商品/500ml,300,100,200',
+    '26/06/12,よい日々,通常,GH1234567890123,源喜の一粒,9999,0,0', // non-FH product code, must be excluded
   ];
   return lines.join('\n') + '\n';
 }
@@ -66,5 +66,6 @@ test('parseDailyCsv attaches brand from productBrandMapping and reports unmapped
 
   assert.ok(unmappedProducts['FH0003030303000']);
   assert.equal(unmappedProducts['FH0003030303000'].sales, 2000);
+  assert.equal(unmappedProducts['FH0003030303000'].productName, '謎の新商品/500ml');
   assert.equal('FH0001010101000' in unmappedProducts, false);
 });

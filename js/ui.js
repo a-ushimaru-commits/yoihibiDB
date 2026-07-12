@@ -76,22 +76,25 @@
     </table>`;
   }
 
-  function renderProductBrandWarningsHTML(unmappedProducts, knownBrands) {
+  function renderProductBrandWarningsHTML(unmappedProducts, knownBrands, guesses) {
     const codes = Object.keys(unmappedProducts || {});
     if (codes.length === 0) return '';
     const brands = knownBrands || [];
+    const guessMap = guesses || {};
     const rows = codes.map(code => {
       const info = unmappedProducts[code];
+      const guessed = guessMap[code];
       const assignCell = brands.length > 0
         ? `<select data-product-code="${code}">
             <option value="">-- 選択 --</option>
-            ${brands.map(b => `<option value="${b}">${b}</option>`).join('')}
+            ${brands.map(b => `<option value="${b}"${b === guessed ? ' selected' : ''}>${b}</option>`).join('')}
             <option value="__new__">新しいブランド名を入力...</option>
           </select>
           <input type="text" data-product-code-new="${code}" placeholder="新しいブランド名" style="display:none">`
         : `<input type="text" data-product-code="${code}" placeholder="ブランド名">`;
       return `<tr>
         <td>${code}</td>
+        <td>${info.productName || ''}</td>
         <td>${info.count}件, ${formatYen(info.sales)}</td>
         <td>${assignCell}</td>
       </tr>`;

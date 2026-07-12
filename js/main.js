@@ -1,5 +1,5 @@
 (function () {
-  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, detectFileType } = window.YoiHibi;
+  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, detectFileType, guessBrandForProductCode } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
   const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend } = window.YoiHibi;
   const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML } = window.YoiHibi;
@@ -82,8 +82,14 @@
   }
 
   function showBrandWarnings(unmappedProducts) {
-    const knownBrands = Array.from(new Set(Object.values(store.getState().productBrandMapping))).sort();
-    el('brandWarnings').innerHTML = renderProductBrandWarningsHTML(unmappedProducts, knownBrands);
+    const productBrandMapping = store.getState().productBrandMapping;
+    const knownBrands = Array.from(new Set(Object.values(productBrandMapping))).sort();
+    const guesses = {};
+    Object.keys(unmappedProducts || {}).forEach(code => {
+      const guess = guessBrandForProductCode(code, productBrandMapping);
+      if (guess) guesses[code] = guess;
+    });
+    el('brandWarnings').innerHTML = renderProductBrandWarningsHTML(unmappedProducts, knownBrands, guesses);
     setupBrandAssignForm();
   }
 

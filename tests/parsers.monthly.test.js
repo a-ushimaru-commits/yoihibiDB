@@ -38,15 +38,15 @@ function buildMonthlyWorkbook() {
   // 金額 is deliberately WRONG on every row (a decoy) to prove the parser sums 金額合計, not 金額.
   // 商品コード drives brand identification now (replacing the old, incorrect ブランド区分='22' rule),
   // verified against real user data: 商品コード starting with "FH" matches 区分②='よい日々' row-for-row.
-  const header = ['出荷日', '媒体名', '事業部', '販売区分', '商品コード', '金額', '金額合計', '仕入金額', '粗利額'];
+  const header = ['出荷日', '媒体名', '事業部', '販売区分', '商品コード', '商品名', '金額', '金額合計', '仕入金額', '粗利額'];
   const rows = [
     header,
-    ['26/06/09', 'よい日々', 'FH', '通常', 'FH0001010101000', 999, 1000, 400, 600], // mapped to MCTオイル
-    ['26/06/09', 'よい日々', 'FH', '通常', 'fh0002020202000', 499, 500, 200, 300], // lowercase "fh" prefix, mapped to MSMパウダー
-    ['26/06/10', '楽天よい日々', 'FH', '定期', 'FH0003030303000', 1999, 2000, 800, 1200], // not in mapping -> 未分類
-    ['26/06/11', '謎の新規媒体', 'FH', '通常', 'FH0004040404000', 299, 300, 100, 200],
-    ['26/06/12', 'よい日々', 'PD', '通常', 'GH1234567890123', 9999, 9999, 0, 0], // non-FH product code, must be excluded
-    ['26/06/13', '倉庫移動', 'FH', '通常', 'FH0005050505000', 699, 700, 250, 450], // real-data verified: must be INCLUDED (mapped to その他), not excluded
+    ['26/06/09', 'よい日々', 'FH', '通常', 'FH0001010101000', 'ﾌﾛｰ･ｴｯｾﾝｽ+ ﾘｷｯﾄﾞ/500ml', 999, 1000, 400, 600], // mapped to MCTオイル
+    ['26/06/09', 'よい日々', 'FH', '通常', 'fh0002020202000', 'MSMﾊﾟｳﾀﾞｰ /60包', 499, 500, 200, 300], // lowercase "fh" prefix, mapped to MSMパウダー
+    ['26/06/10', '楽天よい日々', 'FH', '定期', 'FH0003030303000', '謎の新商品/500ml', 1999, 2000, 800, 1200], // not in mapping -> 未分類
+    ['26/06/11', '謎の新規媒体', 'FH', '通常', 'FH0004040404000', '謎の新商品/500ml', 299, 300, 100, 200],
+    ['26/06/12', 'よい日々', 'PD', '通常', 'GH1234567890123', '源喜の一粒', 9999, 9999, 0, 0], // non-FH product code, must be excluded
+    ['26/06/13', '倉庫移動', 'FH', '通常', 'FH0005050505000', 'ﾍﾞﾙﾒ/700g', 699, 700, 250, 450], // real-data verified: must be INCLUDED (mapped to その他), not excluded
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -101,11 +101,12 @@ test('parseMonthlyWorkbook attaches brand from productBrandMapping and defaults 
   assert.equal(jishaTotal, 1500);
 });
 
-test('parseMonthlyWorkbook reports unmapped product codes with count and sales', () => {
+test('parseMonthlyWorkbook reports unmapped product codes with count, sales, and a representative product name', () => {
   const { unmappedProducts } = parseMonthlyWorkbook(buildMonthlyWorkbook(), undefined, SAMPLE_BRAND_MAPPING);
   assert.ok(unmappedProducts['FH0003030303000']);
   assert.equal(unmappedProducts['FH0003030303000'].count, 1);
   assert.equal(unmappedProducts['FH0003030303000'].sales, 2000);
+  assert.equal(unmappedProducts['FH0003030303000'].productName, '謎の新商品/500ml');
   // rows already mapped to a real brand must NOT appear as unmapped
   assert.equal('FH0001010101000' in unmappedProducts, false);
 });

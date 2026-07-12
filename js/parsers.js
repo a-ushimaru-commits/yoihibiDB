@@ -144,6 +144,35 @@
     return mapping;
   }
 
+  function guessBrandForProductCode(code, productBrandMapping) {
+    const target = normalizeProductCode(code);
+    const brandMap = productBrandMapping || {};
+    if (target === '') return null;
+
+    let bestKey = null;
+    let bestLen = 0;
+    let ambiguous = false;
+
+    for (const key of Object.keys(brandMap)) {
+      const maxLen = Math.min(target.length, key.length);
+      let len = 0;
+      while (len < maxLen && target[len] === key[len]) len += 1;
+      const threshold = maxLen - 2;
+      if (len < 10 || len < threshold) continue;
+
+      if (len > bestLen) {
+        bestLen = len;
+        bestKey = key;
+        ambiguous = false;
+      } else if (len === bestLen && bestKey && brandMap[key] !== brandMap[bestKey]) {
+        ambiguous = true;
+      }
+    }
+
+    if (!bestKey || ambiguous) return null;
+    return brandMap[bestKey];
+  }
+
   function parseMonthlyWorkbook(workbook, mediaMapping, productBrandMapping) {
     const rows = sheetToRows(workbook, '売上明細_提出');
     if (!rows) {
@@ -158,6 +187,7 @@
     const col = name => header.indexOf(name);
     const idx = {
       shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), productCode: col('商品コード'),
+      productName: col('商品名'),
       sales: col('金額合計'), cost: col('仕入金額'), profit: col('粗利額'),
     };
 
@@ -195,7 +225,10 @@
       const hasBrand = Object.prototype.hasOwnProperty.call(brandMap, productCode);
       const brand = hasBrand ? brandMap[productCode] : '未分類';
       if (!hasBrand) {
-        if (!unmappedProducts[productCode]) unmappedProducts[productCode] = { count: 0, sales: 0 };
+        if (!unmappedProducts[productCode]) {
+          const productName = idx.productName === -1 || row[idx.productName] == null ? '' : String(row[idx.productName]).trim();
+          unmappedProducts[productCode] = { count: 0, sales: 0, productName };
+        }
         unmappedProducts[productCode].count += 1;
         unmappedProducts[productCode].sales += sales;
       }
@@ -251,6 +284,7 @@
     const col = name => header.indexOf(name);
     const idx = {
       shipDate: col('出荷日'), media: col('媒体名'), type: col('販売区分'), productCode: col('商品コード'),
+      productName: col('商品名'),
       sales: col('金額'), cost: col('仕入金額'), profit: col('粗利額'),
     };
 
@@ -288,7 +322,10 @@
       const hasBrand = Object.prototype.hasOwnProperty.call(brandMap, productCode);
       const brand = hasBrand ? brandMap[productCode] : '未分類';
       if (!hasBrand) {
-        if (!unmappedProducts[productCode]) unmappedProducts[productCode] = { count: 0, sales: 0 };
+        if (!unmappedProducts[productCode]) {
+          const productName = idx.productName === -1 || row[idx.productName] == null ? '' : String(row[idx.productName]).trim();
+          unmappedProducts[productCode] = { count: 0, sales: 0, productName };
+        }
         unmappedProducts[productCode].count += 1;
         unmappedProducts[productCode].sales += sales;
       }
@@ -316,5 +353,5 @@
     return 'unknown';
   }
 
-  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode, parseBrandLookup };
+  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode, parseBrandLookup, guessBrandForProductCode };
 });

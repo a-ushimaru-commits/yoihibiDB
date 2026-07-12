@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const XLSX = require('xlsx');
-const { parseBrandLookup, detectFileType } = require('../js/parsers.js');
+const { parseBrandLookup, detectFileType, guessBrandForProductCode } = require('../js/parsers.js');
 
 function buildBrandLookupWorkbook() {
   const aoa = [
@@ -44,4 +44,42 @@ test('parseBrandLookup throws a clear error when required columns are missing', 
 test('detectFileType recognizes 分解詳細リスト by filename prefix', () => {
   assert.equal(detectFileType('分解詳細リスト.xlsx', ['Sheet1']), 'brandLookup');
   assert.equal(detectFileType('分解詳細リスト_20260710.xlsx', ['Sheet1']), 'brandLookup');
+});
+
+const REAL_SHAPE_MAPPING = {
+  'FH0001280401000': 'ベルメ',
+  'FH0001280401000B': 'ベルメ',
+  'FH0001280401000K': 'ベルメ',
+  'FH0001990403000Ｔ': 'ベルメ',
+  'FH0001010601000': 'MSMパウダー',
+  'FH0001017002000': 'MSMパウダー',
+};
+
+test('guessBrandForProductCode suggests a brand when only a trailing 1-2 char variant suffix differs', () => {
+  // "FH0001280401000F" differs from the known "FH0001280401000" only by a trailing "F" suffix
+  assert.equal(guessBrandForProductCode('FH0001280401000F', REAL_SHAPE_MAPPING), 'ベルメ');
+  // "FH0001990403000" differs from the known "FH0001990403000Ｔ" only by the trailing "Ｔ"
+  assert.equal(guessBrandForProductCode('FH0001990403000', REAL_SHAPE_MAPPING), 'ベルメ');
+});
+
+test('guessBrandForProductCode returns null when the shared prefix is too short to be confident', () => {
+  // "FH0001017301100" only shares "FH0001017" (9 chars) with the known "FH0001017002000" -- differs
+  // well before the trailing variant-suffix region, so this must NOT guess
+  assert.equal(guessBrandForProductCode('FH0001017301100', REAL_SHAPE_MAPPING), null);
+  // a structurally unrelated short code must not match anything
+  assert.equal(guessBrandForProductCode('FH06-2T', REAL_SHAPE_MAPPING), null);
+});
+
+test('guessBrandForProductCode returns null on an ambiguous tie between different brands', () => {
+  const ambiguous = {
+    'FH0001280401000B': 'ベルメ',
+    'FH0001280401000K': 'MCTオイル', // same-length equal-prefix neighbor, but a different brand
+  };
+  assert.equal(guessBrandForProductCode('FH0001280401000F', ambiguous), null);
+});
+
+test('guessBrandForProductCode returns null for blank input or an empty mapping', () => {
+  assert.equal(guessBrandForProductCode('', REAL_SHAPE_MAPPING), null);
+  assert.equal(guessBrandForProductCode(null, REAL_SHAPE_MAPPING), null);
+  assert.equal(guessBrandForProductCode('FH0001280401000F', {}), null);
 });
