@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
   getMonthlyComparison, getChannelTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandTable,
+  getBrandMonthlyPivot,
 } = require('../js/aggregate.js');
 
 test('shiftYearMonth moves the year and keeps the month', () => {
@@ -112,4 +113,60 @@ test('getBrandTable returns an empty array when the month has no brand-bearing r
   state.monthlyRecords = state.monthlyRecords.map(r => { const { brand, ...rest } = r; return rest; }); // simulate pre-feature records
   const table = getBrandTable(state, '2026-06');
   assert.deepEqual(table, []);
+});
+
+function pivotSampleState() {
+  return {
+    baseRecords: [
+      { yearMonth: '2025-06', channel: 'TV', type: '定期', brand: 'MCTオイル', sales: 100, cost: 40, profit: 60 },
+      { yearMonth: '2025-06', channel: '自社', type: '通常', brand: 'MSMパウダー', sales: 200, cost: 80, profit: 120 },
+      { yearMonth: '2025-06', channel: 'TV', type: '通常', brand: null, sales: 50, cost: 20, profit: 30 }, // blank-brand row: counts in totals, not in byBrand
+    ],
+    monthlyRecords: [
+      { yearMonth: '2026-06', channel: 'TV', type: '定期', brand: 'MCTオイル', sales: 300, cost: 120, profit: 180 },
+      { yearMonth: '2026-06', channel: '自社', type: '通常', brand: '未分類', sales: 10, cost: 5, profit: 5 }, // "未分類" is a real string brand, unlike null
+    ],
+    dailyRecords: [],
+    targets: [],
+    mediaMapping: {},
+    productBrandMapping: {},
+  };
+}
+
+test('getBrandMonthlyPivot spans both 1期 (baseRecords) and 2期 (monthlyRecords) as one continuous month list', () => {
+  const pivot = getBrandMonthlyPivot(pivotSampleState());
+  assert.deepEqual(pivot.months, ['2025-06', '2026-06']);
+});
+
+test('getBrandMonthlyPivot sorts brands by total sales across all months, descending, excluding null-brand rows', () => {
+  const pivot = getBrandMonthlyPivot(pivotSampleState());
+  // MCTオイル: 100 + 300 = 400 total; MSMパウダー: 200; 未分類: 10 -- and no separate "null" entry
+  assert.deepEqual(pivot.brands, ['MCTオイル', 'MSMパウダー', '未分類']);
+});
+
+test('getBrandMonthlyPivot totals include blank-brand rows even though they are excluded from byBrand', () => {
+  const pivot = getBrandMonthlyPivot(pivotSampleState());
+  const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
+  assert.equal(june2025.totalTeikiSales, 100);
+  assert.equal(june2025.totalTeikiProfit, 60);
+  assert.equal(june2025.totalTsujoSales, 250); // 200 (MSMパウダー) + 50 (blank brand)
+  assert.equal(june2025.totalTsujoProfit, 150); // 120 + 30
+});
+
+test('getBrandMonthlyPivot zero-fills a brand with no data in a given month, per-brand split by 定期/通常', () => {
+  const pivot = getBrandMonthlyPivot(pivotSampleState());
+  const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
+  assert.deepEqual(june2025.byBrand['MCTオイル'], { teikiSales: 100, teikiProfit: 60, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2025.byBrand['MSMパウダー'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 });
+  assert.deepEqual(june2025.byBrand['未分類'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 }); // no 2025-06 row for 未分類 at all
+
+  const june2026 = pivot.rows.find(r => r.yearMonth === '2026-06');
+  assert.deepEqual(june2026.byBrand['MCTオイル'], { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2026.byBrand['MSMパウダー'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2026.byBrand['未分類'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 10, tsujoProfit: 5 });
+});
+
+test('getBrandMonthlyPivot returns empty months/brands/rows when both record sets are empty', () => {
+  const pivot = getBrandMonthlyPivot({ baseRecords: [], monthlyRecords: [] });
+  assert.deepEqual(pivot, { months: [], brands: [], rows: [] });
 });

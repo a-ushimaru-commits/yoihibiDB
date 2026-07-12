@@ -93,6 +93,43 @@
     return rows;
   }
 
+  function getBrandMonthlyPivot(state) {
+    const allRecords = (state.baseRecords || []).concat(state.monthlyRecords || []);
+    const months = Array.from(new Set(allRecords.map(r => r.yearMonth))).sort();
+
+    const brandSales = new Map();
+    allRecords.forEach(r => {
+      if (r.brand == null) return;
+      brandSales.set(r.brand, (brandSales.get(r.brand) || 0) + r.sales);
+    });
+    const brands = Array.from(brandSales.keys()).sort((a, b) => brandSales.get(b) - brandSales.get(a));
+
+    const rows = months.map(yearMonth => {
+      const monthRecords = filterRecords(allRecords, { yearMonth });
+      const totalTeiki = sumRecords(filterRecords(monthRecords, { type: '定期' }));
+      const totalTsujo = sumRecords(filterRecords(monthRecords, { type: '通常' }));
+
+      const byBrand = {};
+      brands.forEach(brand => {
+        const teiki = sumRecords(filterRecords(monthRecords, { brand, type: '定期' }));
+        const tsujo = sumRecords(filterRecords(monthRecords, { brand, type: '通常' }));
+        byBrand[brand] = {
+          teikiSales: teiki.sales, teikiProfit: teiki.profit,
+          tsujoSales: tsujo.sales, tsujoProfit: tsujo.profit,
+        };
+      });
+
+      return {
+        yearMonth,
+        totalTeikiSales: totalTeiki.sales, totalTeikiProfit: totalTeiki.profit,
+        totalTsujoSales: totalTsujo.sales, totalTsujoProfit: totalTsujo.profit,
+        byBrand,
+      };
+    });
+
+    return { months, brands, rows };
+  }
+
   function getDailyCumulativeSeries(state, yearMonth) {
     const daily = filterRecords(state.dailyRecords, { yearMonth });
     const nDays = daysInMonth(yearMonth);
@@ -145,5 +182,6 @@
   return {
     CHANNELS, shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
     getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend,
+    getBrandMonthlyPivot,
   };
 });
