@@ -60,10 +60,19 @@ test('renderBrandTableHTML shows an empty-state message instead of a table when 
   assert.match(html, /ブランド別データがありません/);
 });
 
-test('renderProductBrandWarningsHTML lists unmapped product codes with an assignable input, empty string when none', () => {
+test('renderProductBrandWarningsHTML falls back to a free-text input when no known brands are given', () => {
   const html = renderProductBrandWarningsHTML({ 'FH0009999999999': { count: 3, sales: 4500 } });
   assert.match(html, /FH0009999999999/);
-  assert.match(html, /data-product-code="FH0009999999999"/);
+  assert.match(html, /<input type="text" data-product-code="FH0009999999999"/);
   assert.match(html, /<form id="brandAssignForm"/);
   assert.equal(renderProductBrandWarningsHTML({}), '');
+});
+
+test('renderProductBrandWarningsHTML renders a <select> of known brands plus a "new brand" text fallback', () => {
+  const html = renderProductBrandWarningsHTML({ 'FH0009999999999': { count: 3, sales: 4500 } }, ['MCTオイル', 'MSMパウダー']);
+  assert.match(html, /<select data-product-code="FH0009999999999">/);
+  assert.match(html, /<option value="MCTオイル">MCTオイル<\/option>/);
+  assert.match(html, /<option value="MSMパウダー">MSMパウダー<\/option>/);
+  assert.match(html, /data-product-code-new="FH0009999999999"/);
+  assert.equal(renderProductBrandWarningsHTML({}, ['MCTオイル']), '');
 });

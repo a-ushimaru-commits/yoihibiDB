@@ -82,20 +82,33 @@
   }
 
   function showBrandWarnings(unmappedProducts) {
-    el('brandWarnings').innerHTML = renderProductBrandWarningsHTML(unmappedProducts);
+    const knownBrands = Array.from(new Set(Object.values(store.getState().productBrandMapping))).sort();
+    el('brandWarnings').innerHTML = renderProductBrandWarningsHTML(unmappedProducts, knownBrands);
     setupBrandAssignForm();
   }
 
   function setupBrandAssignForm() {
     const form = document.getElementById('brandAssignForm');
     if (!form) return;
+    form.querySelectorAll('select[data-product-code]').forEach(select => {
+      const code = select.getAttribute('data-product-code');
+      const newInput = form.querySelector(`input[data-product-code-new="${code}"]`);
+      if (!newInput) return;
+      select.addEventListener('change', () => {
+        newInput.style.display = select.value === '__new__' ? '' : 'none';
+      });
+    });
     form.addEventListener('submit', e => {
       e.preventDefault();
-      const inputs = form.querySelectorAll('input[data-product-code]');
       const overrides = {};
-      inputs.forEach(input => {
-        const value = input.value.trim();
-        if (value) overrides[input.getAttribute('data-product-code')] = value;
+      form.querySelectorAll('[data-product-code]').forEach(field => {
+        const code = field.getAttribute('data-product-code');
+        let value = field.value.trim();
+        if (field.tagName === 'SELECT' && value === '__new__') {
+          const newInput = form.querySelector(`input[data-product-code-new="${code}"]`);
+          value = newInput ? newInput.value.trim() : '';
+        }
+        if (value) overrides[code] = value;
       });
       if (Object.keys(overrides).length === 0) return;
       const merged = Object.assign({}, store.getState().productBrandMapping, overrides);
