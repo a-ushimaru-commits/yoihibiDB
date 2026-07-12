@@ -1,8 +1,8 @@
 (function () {
   const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, detectFileType, guessBrandForProductCode } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
-  const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot } = window.YoiHibi;
-  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML } = window.YoiHibi;
+  const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot, getChannelMonthlyPivot } = window.YoiHibi;
+  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML } = window.YoiHibi;
 
   const store = createStore(window.localStorage);
   let trendChart = null;
@@ -143,6 +143,7 @@
     el('channelTable').innerHTML = renderChannelTableHTML(getChannelTable(state, yearMonth));
     el('brandTable').innerHTML = renderBrandTableHTML(getBrandTable(state, yearMonth));
     el('brandMonthlyPivot').innerHTML = renderBrandMonthlyPivotHTML(getBrandMonthlyPivot(state));
+    el('channelMonthlyPivot').innerHTML = renderChannelMonthlyPivotHTML(getChannelMonthlyPivot(state));
 
     renderTrendChart(getMonthlyTrend(state));
     renderDailyChart(getDailyCumulativeSeries(state, yearMonth));

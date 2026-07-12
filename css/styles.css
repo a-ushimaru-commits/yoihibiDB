@@ -22,11 +22,11 @@ table.channel-table th:first-child, table.channel-table td:first-child { text-al
 table.brand-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
 table.brand-table th, table.brand-table td { padding: 8px 12px; border-bottom: 1px solid #e0e0e0; text-align: right; }
 table.brand-table th:first-child, table.brand-table td:first-child { text-align: left; }
-.brand-pivot-scroll { overflow-x: auto; background: #fff; border-radius: 8px; }
-table.brand-pivot-table { border-collapse: collapse; white-space: nowrap; }
-table.brand-pivot-table th, table.brand-pivot-table td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; border-right: 1px solid #f1f3f4; text-align: right; font-size: 13px; }
-table.brand-pivot-table th:first-child, table.brand-pivot-table td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
-table.brand-pivot-table th[colspan="4"] { text-align: left; }
-table.brand-pivot-table th.col-teiki, table.brand-pivot-table td.col-teiki { background: #e8f0fe; }
-table.brand-pivot-table th.col-tsujo, table.brand-pivot-table td.col-tsujo { background: #e6f4ea; }
-table.brand-pivot-table th.brand-band, table.brand-pivot-table td.brand-band { background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)); }
+.brand-pivot-scroll, .channel-pivot-scroll { overflow-x: auto; background: #fff; border-radius: 8px; }
+table.brand-pivot-table, table.channel-pivot-table { border-collapse: collapse; white-space: nowrap; }
+table.brand-pivot-table th, table.brand-pivot-table td, table.channel-pivot-table th, table.channel-pivot-table td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; border-right: 1px solid #f1f3f4; text-align: right; font-size: 13px; }
+table.brand-pivot-table th:first-child, table.brand-pivot-table td:first-child, table.channel-pivot-table th:first-child, table.channel-pivot-table td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
+table.brand-pivot-table th[colspan="4"], table.channel-pivot-table th[colspan="4"] { text-align: left; }
+table.brand-pivot-table th.col-teiki, table.brand-pivot-table td.col-teiki, table.channel-pivot-table th.col-teiki, table.channel-pivot-table td.col-teiki { background: #e8f0fe; }
+table.brand-pivot-table th.col-tsujo, table.brand-pivot-table td.col-tsujo, table.channel-pivot-table th.col-tsujo, table.channel-pivot-table td.col-tsujo { background: #e6f4ea; }
+table.brand-pivot-table th.brand-band, table.brand-pivot-table td.brand-band, table.channel-pivot-table th.brand-band, table.channel-pivot-table td.brand-band { background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)); }
