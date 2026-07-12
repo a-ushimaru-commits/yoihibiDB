@@ -142,6 +142,7 @@
     el('kpiRow').innerHTML = renderKpiCardsHTML(getMonthlyComparison(state, yearMonth));
     el('channelTable').innerHTML = renderChannelTableHTML(getChannelTable(state, yearMonth));
     el('brandTable').innerHTML = renderBrandTableHTML(getBrandTable(state, yearMonth));
+    el('ownChannelBrandMonthlyPivot').innerHTML = renderBrandMonthlyPivotHTML(getBrandMonthlyPivot(state, { channel: '自社' }));
     el('brandMonthlyPivot').innerHTML = renderBrandMonthlyPivotHTML(getBrandMonthlyPivot(state));
     el('channelMonthlyPivot').innerHTML = renderChannelMonthlyPivotHTML(getChannelMonthlyPivot(state));
 
