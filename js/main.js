@@ -1,13 +1,12 @@
 (function () {
   const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, detectFileType, guessBrandForProductCode } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
-  const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlySeries } = window.YoiHibi;
-  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlySeriesHTML } = window.YoiHibi;
+  const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot } = window.YoiHibi;
+  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML } = window.YoiHibi;
 
   const store = createStore(window.localStorage);
   let trendChart = null;
   let dailyChart = null;
-  let selectedPivotBrand = 'ALL';
 
   function el(id) { return document.getElementById(id); }
 
@@ -125,15 +124,6 @@
     });
   }
 
-  function setupBrandSeriesSelector() {
-    const select = document.getElementById('brandSeriesSelect');
-    if (!select) return;
-    select.addEventListener('change', () => {
-      selectedPivotBrand = select.value;
-      renderAll();
-    });
-  }
-
   function refreshMonthOptions() {
     const state = store.getState();
     const months = Array.from(new Set(state.monthlyRecords.map(r => r.yearMonth))).sort();
@@ -152,8 +142,7 @@
     el('kpiRow').innerHTML = renderKpiCardsHTML(getMonthlyComparison(state, yearMonth));
     el('channelTable').innerHTML = renderChannelTableHTML(getChannelTable(state, yearMonth));
     el('brandTable').innerHTML = renderBrandTableHTML(getBrandTable(state, yearMonth));
-    el('brandMonthlyPivot').innerHTML = renderBrandMonthlySeriesHTML(getBrandMonthlySeries(state, selectedPivotBrand), selectedPivotBrand);
-    setupBrandSeriesSelector();
+    el('brandMonthlyPivot').innerHTML = renderBrandMonthlyPivotHTML(getBrandMonthlyPivot(state));
 
     renderTrendChart(getMonthlyTrend(state));
     renderDailyChart(getDailyCumulativeSeries(state, yearMonth));

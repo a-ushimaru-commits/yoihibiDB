@@ -116,45 +116,58 @@
     return `background-color: hsl(${hue}, 65%, ${lightness}%);`;
   }
 
-  function renderBrandMonthlySeriesHTML(series, selection) {
-    const brands = (series && series.brands) || [];
-    if (brands.length === 0) {
-      return '<p class="brand-series-empty">表示できるデータがありません（月次実績とブランド対応表を取込むと表示されます）。</p>';
+  function renderBrandMonthlyPivotHTML(pivot) {
+    if (!pivot || !pivot.brands || pivot.brands.length === 0) {
+      return '<p class="brand-pivot-empty">表示できるデータがありません（月次実績とブランド対応表を取込むと表示されます）。</p>';
     }
-    const rows = (series && series.rows) || [];
-    const selectValue = selection || 'ALL';
-    const options = [`<option value="ALL"${selectValue === 'ALL' ? ' selected' : ''}>全体（合計）</option>`]
-      .concat(brands.map(b => `<option value="${b}"${b === selectValue ? ' selected' : ''}>${b}</option>`))
+    const rows = pivot.rows;
+    const maxAbsOf = accessor => Math.max(0, ...rows.map(r => Math.abs(accessor(r))));
+    const totalMax = {
+      teikiSales: maxAbsOf(r => r.totalTeikiSales), teikiProfit: maxAbsOf(r => r.totalTeikiProfit),
+      tsujoSales: maxAbsOf(r => r.totalTsujoSales), tsujoProfit: maxAbsOf(r => r.totalTsujoProfit),
+    };
+    const brandMax = {};
+    pivot.brands.forEach(b => {
+      brandMax[b] = {
+        teikiSales: maxAbsOf(r => r.byBrand[b].teikiSales), teikiProfit: maxAbsOf(r => r.byBrand[b].teikiProfit),
+        tsujoSales: maxAbsOf(r => r.byBrand[b].tsujoSales), tsujoProfit: maxAbsOf(r => r.byBrand[b].tsujoProfit),
+      };
+    });
+
+    const brandHeaderCells = pivot.brands.map(b => `<th colspan="4">${b}</th>`).join('');
+    const brandSubHeaderCells = pivot.brands
+      .map(() => '<th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th>')
       .join('');
 
-    const maxAbs = {
-      teikiSales: Math.max(0, ...rows.map(r => Math.abs(r.teikiSales))),
-      teikiProfit: Math.max(0, ...rows.map(r => Math.abs(r.teikiProfit))),
-      tsujoSales: Math.max(0, ...rows.map(r => Math.abs(r.tsujoSales))),
-      tsujoProfit: Math.max(0, ...rows.map(r => Math.abs(r.tsujoProfit))),
-    };
+    const bodyRows = rows.map(row => {
+      const brandCells = pivot.brands.map(b => {
+        const cell = row.byBrand[b];
+        const m = brandMax[b];
+        return `<td class="col-teiki" style="${heatmapColor(cell.teikiSales, m.teikiSales)}">${formatYen(cell.teikiSales)}</td>`
+          + `<td class="col-teiki" style="${heatmapColor(cell.teikiProfit, m.teikiProfit)}">${formatYen(cell.teikiProfit)}</td>`
+          + `<td class="col-tsujo" style="${heatmapColor(cell.tsujoSales, m.tsujoSales)}">${formatYen(cell.tsujoSales)}</td>`
+          + `<td class="col-tsujo" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit)}">${formatYen(cell.tsujoProfit)}</td>`;
+      }).join('');
+      return `<tr>
+        <td>${row.yearMonth}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiSales, totalMax.teikiSales)}">${formatYen(row.totalTeikiSales)}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiProfit, totalMax.teikiProfit)}">${formatYen(row.totalTeikiProfit)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoSales, totalMax.tsujoSales)}">${formatYen(row.totalTsujoSales)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoProfit, totalMax.tsujoProfit)}">${formatYen(row.totalTsujoProfit)}</td>
+        ${brandCells}
+      </tr>`;
+    }).join('');
 
-    const bodyRows = rows.map(r => `
-      <tr>
-        <td>${r.yearMonth}</td>
-        <td class="col-teiki" style="${heatmapColor(r.teikiSales, maxAbs.teikiSales)}">${formatYen(r.teikiSales)}</td>
-        <td class="col-teiki" style="${heatmapColor(r.teikiProfit, maxAbs.teikiProfit)}">${formatYen(r.teikiProfit)}</td>
-        <td class="col-tsujo" style="${heatmapColor(r.tsujoSales, maxAbs.tsujoSales)}">${formatYen(r.tsujoSales)}</td>
-        <td class="col-tsujo" style="${heatmapColor(r.tsujoProfit, maxAbs.tsujoProfit)}">${formatYen(r.tsujoProfit)}</td>
-      </tr>`).join('');
-
-    return `
-      <div class="brand-series-controls">
-        ブランド: <select id="brandSeriesSelect">${options}</select>
-      </div>
-      <table class="brand-series-table">
+    return `<div class="brand-pivot-scroll">
+      <table class="brand-pivot-table">
         <thead>
-          <tr><th>月</th><th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th></tr>
+          <tr><th rowspan="2">月</th><th colspan="4">全体</th>${brandHeaderCells}</tr>
+          <tr><th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th>${brandSubHeaderCells}</tr>
         </thead>
         <tbody>${bodyRows}</tbody>
       </table>
-    `;
+    </div>`;
   }
 
-  return { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlySeriesHTML };
+  return { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML };
 });

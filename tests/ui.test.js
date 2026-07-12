@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlySeriesHTML } = require('../js/ui.js');
+const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML } = require('../js/ui.js');
 
 test('formatYen adds yen sign and thousands separators, rounds to integer', () => {
   assert.equal(formatYen(1234567.8), '¥1,234,568');
@@ -100,32 +100,55 @@ test('heatmapColor returns no color for a zero value or a zero column max, and a
   assert.equal(heatmapColor(-50, 100), 'background-color: hsl(0, 65%, 71%);'); // half intensity, negative
 });
 
-test('renderBrandMonthlySeriesHTML renders a selector (全体 + each brand) and a compact 定期/通常 table for the selection', () => {
-  const series = {
+function samplePivot() {
+  return {
+    months: ['2025-06', '2026-06'],
     brands: ['MCTオイル', 'MSMパウダー'],
     rows: [
-      { yearMonth: '2025-06', teikiSales: 100, teikiProfit: 60, tsujoSales: 200, tsujoProfit: 120 },
-      { yearMonth: '2026-06', teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 },
+      {
+        yearMonth: '2025-06',
+        totalTeikiSales: 100, totalTeikiProfit: 60, totalTsujoSales: 250, totalTsujoProfit: 150,
+        byBrand: {
+          'MCTオイル': { teikiSales: 100, teikiProfit: 60, tsujoSales: 0, tsujoProfit: 0 },
+          'MSMパウダー': { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 },
+        },
+      },
+      {
+        yearMonth: '2026-06',
+        totalTeikiSales: 300, totalTeikiProfit: 180, totalTsujoSales: 10, totalTsujoProfit: 5,
+        byBrand: {
+          'MCTオイル': { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 },
+          'MSMパウダー': { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 },
+        },
+      },
     ],
   };
-  const html = renderBrandMonthlySeriesHTML(series, 'MCTオイル');
-  assert.match(html, /<select id="brandSeriesSelect">/);
-  assert.match(html, /<option value="ALL">全体（合計）<\/option>/);
-  assert.match(html, /<option value="MCTオイル" selected>MCTオイル<\/option>/);
-  assert.match(html, /<option value="MSMパウダー">MSMパウダー<\/option>/); // present, not selected
+}
+
+test('renderBrandMonthlyPivotHTML renders a wide pivot table with month rows and brand column groups', () => {
+  const html = renderBrandMonthlyPivotHTML(samplePivot());
+  assert.match(html, /<table class="brand-pivot-table">/);
+  assert.match(html, /2025-06/);
+  assert.match(html, /2026-06/);
+  assert.match(html, /<th colspan="4">MCTオイル<\/th>/);
+  assert.match(html, /<th colspan="4">MSMパウダー<\/th>/);
+  assert.match(html, /¥100/);
+  assert.match(html, /¥300/);
+});
+
+test('renderBrandMonthlyPivotHTML colors columns by 定期(blue-family class)/通常(green-family class) for both the totals and every brand group', () => {
+  const html = renderBrandMonthlyPivotHTML(samplePivot());
   assert.match(html, /class="col-teiki"/);
   assert.match(html, /class="col-tsujo"/);
-  assert.match(html, /2025-06/);
-  assert.match(html, /¥100/);
 });
 
-test('renderBrandMonthlySeriesHTML defaults the selector to ALL when no selection is given', () => {
-  const html = renderBrandMonthlySeriesHTML({ brands: ['MCTオイル'], rows: [] }, undefined);
-  assert.match(html, /<option value="ALL" selected>全体（合計）<\/option>/);
+test('renderBrandMonthlyPivotHTML applies a heatmap inline style to at least one non-zero cell', () => {
+  const html = renderBrandMonthlyPivotHTML(samplePivot());
+  assert.match(html, /style="background-color: hsl\(140, 65%, \d+%\);"/);
 });
 
-test('renderBrandMonthlySeriesHTML shows an empty-state message when there are no brands yet', () => {
-  const html = renderBrandMonthlySeriesHTML({ brands: [], rows: [] }, 'ALL');
+test('renderBrandMonthlyPivotHTML shows an empty-state message when there are no brands yet', () => {
+  const html = renderBrandMonthlyPivotHTML({ months: [], brands: [], rows: [] });
   assert.doesNotMatch(html, /<table/);
   assert.match(html, /表示できるデータがありません/);
 });
