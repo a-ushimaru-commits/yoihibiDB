@@ -74,6 +74,25 @@
     });
   }
 
+  function getBrandTable(state, yearMonth) {
+    const baseMonth = shiftYearMonth(yearMonth, -1);
+    const current = filterRecords(state.monthlyRecords, { yearMonth });
+    const brands = Array.from(new Set(current.filter(r => r.brand != null).map(r => r.brand)));
+    const rows = brands.map(brand => {
+      const cur = sumRecords(filterRecords(state.monthlyRecords, { yearMonth, brand }));
+      const base = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth, brand }));
+      return {
+        brand,
+        sales: cur.sales,
+        profit: cur.profit,
+        profitRate: profitRate(cur),
+        salesYoY: pctChange(cur.sales, base.sales),
+      };
+    });
+    rows.sort((a, b) => b.sales - a.sales);
+    return rows;
+  }
+
   function getDailyCumulativeSeries(state, yearMonth) {
     const daily = filterRecords(state.dailyRecords, { yearMonth });
     const nDays = daysInMonth(yearMonth);
@@ -125,6 +144,6 @@
 
   return {
     CHANNELS, shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
-    getMonthlyComparison, getChannelTable, getDailyCumulativeSeries, getMonthlyTrend,
+    getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend,
   };
 });

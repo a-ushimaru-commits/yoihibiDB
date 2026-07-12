@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
-  getMonthlyComparison, getChannelTable, getDailyCumulativeSeries, getMonthlyTrend,
+  getMonthlyComparison, getChannelTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandTable,
 } = require('../js/aggregate.js');
 
 test('shiftYearMonth moves the year and keeps the month', () => {
@@ -38,19 +38,20 @@ test('daysInMonth returns correct day counts including leap Feb', () => {
 function sampleState() {
   return {
     baseRecords: [
-      { yearMonth: '2025-06', channel: 'TV', type: '通常', sales: 1000, cost: 400, profit: 600 },
-      { yearMonth: '2025-06', channel: '自社', type: '定期', sales: 2000, cost: 800, profit: 1200 },
+      { yearMonth: '2025-06', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 1000, cost: 400, profit: 600 },
+      { yearMonth: '2025-06', channel: '自社', type: '定期', brand: 'MSMパウダー', sales: 2000, cost: 800, profit: 1200 },
     ],
     monthlyRecords: [
-      { yearMonth: '2026-06', channel: 'TV', type: '通常', sales: 1200, cost: 480, profit: 720 },
-      { yearMonth: '2026-06', channel: '自社', type: '定期', sales: 1800, cost: 720, profit: 1080 },
+      { yearMonth: '2026-06', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 1200, cost: 480, profit: 720 },
+      { yearMonth: '2026-06', channel: '自社', type: '定期', brand: 'MSMパウダー', sales: 1800, cost: 720, profit: 1080 },
     ],
     dailyRecords: [
-      { yearMonth: '2026-06', date: '2026-06-01', channel: 'TV', type: '通常', sales: 100, cost: 40, profit: 60 },
-      { yearMonth: '2026-06', date: '2026-06-02', channel: 'TV', type: '通常', sales: 200, cost: 80, profit: 120 },
+      { yearMonth: '2026-06', date: '2026-06-01', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 100, cost: 40, profit: 60 },
+      { yearMonth: '2026-06', date: '2026-06-02', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 200, cost: 80, profit: 120 },
     ],
     targets: [{ yearMonth: '2026-06', salesTarget: 3000, profitTarget: 1800 }],
     mediaMapping: {},
+    productBrandMapping: {},
   };
 }
 
@@ -91,4 +92,24 @@ test('getMonthlyTrend returns one row per month present in monthlyRecords with b
   assert.equal(trend[0].currentSales, 3000);
   assert.equal(trend[0].baseSales, 3000);
   assert.equal(trend[0].targetSales, 3000);
+});
+
+test('getBrandTable returns one row per brand present in the month, sorted by descending sales, with 1期比', () => {
+  const table = getBrandTable(sampleState(), '2026-06');
+  assert.equal(table.length, 2);
+  assert.equal(table[0].brand, 'MSMパウダー'); // 1800 > 1200, so it sorts first
+  assert.equal(table[0].sales, 1800);
+  assert.equal(table[0].profit, 1080);
+  assert.equal(table[0].profitRate, 0.6);
+  assert.equal(table[0].salesYoY, -0.1); // (1800-2000)/2000
+  assert.equal(table[1].brand, 'MCTオイル');
+  assert.equal(table[1].sales, 1200);
+  assert.equal(table[1].salesYoY, 0.2); // (1200-1000)/1000
+});
+
+test('getBrandTable returns an empty array when the month has no brand-bearing records', () => {
+  const state = sampleState();
+  state.monthlyRecords = state.monthlyRecords.map(r => { const { brand, ...rest } = r; return rest; }); // simulate pre-feature records
+  const table = getBrandTable(state, '2026-06');
+  assert.deepEqual(table, []);
 });
