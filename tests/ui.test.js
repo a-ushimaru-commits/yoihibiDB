@@ -131,7 +131,7 @@ test('renderBrandMonthlyPivotHTML renders a wide pivot table with month rows and
   assert.match(html, /2025-06/);
   assert.match(html, /2026-06/);
   assert.match(html, /<th colspan="4">MCTオイル<\/th>/);
-  assert.match(html, /<th colspan="4">MSMパウダー<\/th>/);
+  assert.match(html, /<th colspan="4" class="brand-band">MSMパウダー<\/th>/);
   assert.match(html, /¥100/);
   assert.match(html, /¥300/);
 });
@@ -145,6 +145,16 @@ test('renderBrandMonthlyPivotHTML colors columns by 定期(blue-family class)/�
 test('renderBrandMonthlyPivotHTML applies a heatmap inline style to at least one non-zero cell', () => {
   const html = renderBrandMonthlyPivotHTML(samplePivot());
   assert.match(html, /style="background-color: hsl\(140, 65%, \d+%\);"/);
+});
+
+test('renderBrandMonthlyPivotHTML bands alternating brand column groups with a "brand-band" class so adjacent brands are visually distinct', () => {
+  const html = renderBrandMonthlyPivotHTML(samplePivot());
+  // first brand (index 0, MCTオイル): no band class
+  assert.match(html, /<th colspan="4">MCTオイル<\/th>/);
+  // second brand (index 1, MSMパウダー): banded
+  assert.match(html, /<th colspan="4" class="brand-band">MSMパウダー<\/th>/);
+  assert.match(html, /class="col-teiki brand-band"/);
+  assert.match(html, /class="col-tsujo brand-band"/);
 });
 
 test('renderBrandMonthlyPivotHTML shows an empty-state message when there are no brands yet', () => {

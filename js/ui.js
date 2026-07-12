@@ -134,19 +134,22 @@
       };
     });
 
-    const brandHeaderCells = pivot.brands.map(b => `<th colspan="4">${b}</th>`).join('');
+    const bandOf = i => (i % 2 === 1 ? ' brand-band' : '');
+
+    const brandHeaderCells = pivot.brands.map((b, i) => (bandOf(i) ? `<th colspan="4" class="brand-band">${b}</th>` : `<th colspan="4">${b}</th>`)).join('');
     const brandSubHeaderCells = pivot.brands
-      .map(() => '<th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th>')
+      .map((b, i) => `<th class="col-teiki${bandOf(i)}">定期売上</th><th class="col-teiki${bandOf(i)}">定期粗利</th><th class="col-tsujo${bandOf(i)}">通常売上</th><th class="col-tsujo${bandOf(i)}">通常粗利</th>`)
       .join('');
 
     const bodyRows = rows.map(row => {
-      const brandCells = pivot.brands.map(b => {
+      const brandCells = pivot.brands.map((b, i) => {
         const cell = row.byBrand[b];
         const m = brandMax[b];
-        return `<td class="col-teiki" style="${heatmapColor(cell.teikiSales, m.teikiSales)}">${formatYen(cell.teikiSales)}</td>`
-          + `<td class="col-teiki" style="${heatmapColor(cell.teikiProfit, m.teikiProfit)}">${formatYen(cell.teikiProfit)}</td>`
-          + `<td class="col-tsujo" style="${heatmapColor(cell.tsujoSales, m.tsujoSales)}">${formatYen(cell.tsujoSales)}</td>`
-          + `<td class="col-tsujo" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit)}">${formatYen(cell.tsujoProfit)}</td>`;
+        const band = bandOf(i);
+        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales)}">${formatYen(cell.teikiSales)}</td>`
+          + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiProfit, m.teikiProfit)}">${formatYen(cell.teikiProfit)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoSales, m.tsujoSales)}">${formatYen(cell.tsujoSales)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit)}">${formatYen(cell.tsujoProfit)}</td>`;
       }).join('');
       return `<tr>
         <td>${row.yearMonth}</td>
