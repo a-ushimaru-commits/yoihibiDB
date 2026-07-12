@@ -172,5 +172,61 @@
     </div>`;
   }
 
-  return { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML };
+  function renderChannelMonthlyPivotHTML(pivot) {
+    if (!pivot || !pivot.rows || pivot.rows.length === 0) {
+      return '<p class="channel-pivot-empty">表示できるデータがありません（月次実績を取込むと表示されます）。</p>';
+    }
+    const rows = pivot.rows;
+    const maxAbsOf = accessor => Math.max(0, ...rows.map(r => Math.abs(accessor(r))));
+    const totalMax = {
+      teikiSales: maxAbsOf(r => r.totalTeikiSales), teikiProfit: maxAbsOf(r => r.totalTeikiProfit),
+      tsujoSales: maxAbsOf(r => r.totalTsujoSales), tsujoProfit: maxAbsOf(r => r.totalTsujoProfit),
+    };
+    const channelMax = {};
+    pivot.channels.forEach(c => {
+      channelMax[c] = {
+        teikiSales: maxAbsOf(r => r.byChannel[c].teikiSales), teikiProfit: maxAbsOf(r => r.byChannel[c].teikiProfit),
+        tsujoSales: maxAbsOf(r => r.byChannel[c].tsujoSales), tsujoProfit: maxAbsOf(r => r.byChannel[c].tsujoProfit),
+      };
+    });
+
+    const bandOf = i => (i % 2 === 1 ? ' brand-band' : '');
+
+    const channelHeaderCells = pivot.channels.map((c, i) => (bandOf(i) ? `<th colspan="4" class="brand-band">${c}</th>` : `<th colspan="4">${c}</th>`)).join('');
+    const channelSubHeaderCells = pivot.channels
+      .map((c, i) => `<th class="col-teiki${bandOf(i)}">定期売上</th><th class="col-teiki${bandOf(i)}">定期粗利</th><th class="col-tsujo${bandOf(i)}">通常売上</th><th class="col-tsujo${bandOf(i)}">通常粗利</th>`)
+      .join('');
+
+    const bodyRows = rows.map(row => {
+      const channelCells = pivot.channels.map((c, i) => {
+        const cell = row.byChannel[c];
+        const m = channelMax[c];
+        const band = bandOf(i);
+        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales)}">${formatYen(cell.teikiSales)}</td>`
+          + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiProfit, m.teikiProfit)}">${formatYen(cell.teikiProfit)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoSales, m.tsujoSales)}">${formatYen(cell.tsujoSales)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit)}">${formatYen(cell.tsujoProfit)}</td>`;
+      }).join('');
+      return `<tr>
+        <td>${row.yearMonth}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiSales, totalMax.teikiSales)}">${formatYen(row.totalTeikiSales)}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiProfit, totalMax.teikiProfit)}">${formatYen(row.totalTeikiProfit)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoSales, totalMax.tsujoSales)}">${formatYen(row.totalTsujoSales)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoProfit, totalMax.tsujoProfit)}">${formatYen(row.totalTsujoProfit)}</td>
+        ${channelCells}
+      </tr>`;
+    }).join('');
+
+    return `<div class="channel-pivot-scroll">
+      <table class="channel-pivot-table">
+        <thead>
+          <tr><th rowspan="2">月</th><th colspan="4">全体</th>${channelHeaderCells}</tr>
+          <tr><th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th>${channelSubHeaderCells}</tr>
+        </thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  return { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML };
 });

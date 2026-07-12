@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML } = require('../js/ui.js');
+const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML } = require('../js/ui.js');
 
 test('formatYen adds yen sign and thousands separators, rounds to integer', () => {
   assert.equal(formatYen(1234567.8), '¥1,234,568');
@@ -159,6 +159,50 @@ test('renderBrandMonthlyPivotHTML bands alternating brand column groups with a "
 
 test('renderBrandMonthlyPivotHTML shows an empty-state message when there are no brands yet', () => {
   const html = renderBrandMonthlyPivotHTML({ months: [], brands: [], rows: [] });
+  assert.doesNotMatch(html, /<table/);
+  assert.match(html, /表示できるデータがありません/);
+});
+
+function sampleChannelPivot() {
+  return {
+    months: ['2025-06', '2026-06'],
+    channels: ['自社', 'アマゾン'],
+    rows: [
+      {
+        yearMonth: '2025-06',
+        totalTeikiSales: 100, totalTeikiProfit: 60, totalTsujoSales: 250, totalTsujoProfit: 150,
+        byChannel: {
+          '自社': { teikiSales: 100, teikiProfit: 60, tsujoSales: 0, tsujoProfit: 0 },
+          'アマゾン': { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 },
+        },
+      },
+      {
+        yearMonth: '2026-06',
+        totalTeikiSales: 300, totalTeikiProfit: 180, totalTsujoSales: 10, totalTsujoProfit: 5,
+        byChannel: {
+          '自社': { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 },
+          'アマゾン': { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 },
+        },
+      },
+    ],
+  };
+}
+
+test('renderChannelMonthlyPivotHTML renders a wide pivot table with month rows and channel column groups, banded and colored the same way as the brand table', () => {
+  const html = renderChannelMonthlyPivotHTML(sampleChannelPivot());
+  assert.match(html, /<table class="channel-pivot-table">/);
+  assert.match(html, /2025-06/);
+  assert.match(html, /2026-06/);
+  assert.match(html, /<th colspan="4">自社<\/th>/);
+  assert.match(html, /<th colspan="4" class="brand-band">アマゾン<\/th>/);
+  assert.match(html, /class="col-teiki"/);
+  assert.match(html, /class="col-tsujo"/);
+  assert.match(html, /¥100/);
+  assert.match(html, /¥300/);
+});
+
+test('renderChannelMonthlyPivotHTML shows an empty-state message when there are no months yet', () => {
+  const html = renderChannelMonthlyPivotHTML({ months: [], channels: ['自社', 'アマゾン', '楽天', 'yahoo', '卸', 'TV', 'その他'], rows: [] });
   assert.doesNotMatch(html, /<table/);
   assert.match(html, /表示できるデータがありません/);
 });
