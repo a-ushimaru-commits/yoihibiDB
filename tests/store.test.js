@@ -10,7 +10,7 @@ function fakeBackend() {
 test('getState returns empty structure when nothing stored', () => {
   const store = createStore(fakeBackend());
   const state = store.getState();
-  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], mediaMapping: {} });
+  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], mediaMapping: {}, productBrandMapping: {} });
 });
 
 test('setBaseRecords persists and getState reflects it', () => {
@@ -41,13 +41,15 @@ test('upsertDailyRecords overwrites only the given yearMonth', () => {
   assert.equal(records[0].date, '2026-06-02');
 });
 
-test('setTargets and setMediaMapping replace their sections', () => {
+test('setTargets, setMediaMapping, and setProductBrandMapping replace their sections', () => {
   const store = createStore(fakeBackend());
   store.setTargets([{ yearMonth: '2026-06', salesTarget: 1000000, profitTarget: 400000 }]);
   store.setMediaMapping({ '新媒体': 'TV' });
+  store.setProductBrandMapping({ 'FH0009999999999': 'MCTオイル' });
   const state = store.getState();
   assert.equal(state.targets[0].salesTarget, 1000000);
   assert.equal(state.mediaMapping['新媒体'], 'TV');
+  assert.equal(state.productBrandMapping['FH0009999999999'], 'MCTオイル');
 });
 
 test('exportJSON/importJSON round-trip', () => {
