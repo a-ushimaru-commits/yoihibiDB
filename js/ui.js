@@ -108,37 +108,53 @@
     </div>`;
   }
 
-  function renderBrandMonthlyPivotHTML(pivot) {
-    if (!pivot || !pivot.brands || pivot.brands.length === 0) {
-      return '<p class="brand-pivot-empty">表示できるデータがありません（月次実績とブランド対応表を取込むと表示されます）。</p>';
-    }
-    const brandHeaderCells = pivot.brands.map(b => `<th colspan="4">${b}</th>`).join('');
-    const brandSubHeaderCells = pivot.brands
-      .map(() => '<th>定期売上</th><th>定期粗利</th><th>通常売上</th><th>通常粗利</th>')
-      .join('');
-    const bodyRows = pivot.rows.map(row => {
-      const brandCells = pivot.brands.map(b => {
-        const cell = row.byBrand[b];
-        return `<td>${formatYen(cell.teikiSales)}</td><td>${formatYen(cell.teikiProfit)}</td><td>${formatYen(cell.tsujoSales)}</td><td>${formatYen(cell.tsujoProfit)}</td>`;
-      }).join('');
-      return `<tr>
-        <td>${row.yearMonth}</td>
-        <td>${formatYen(row.totalTeikiSales)}</td><td>${formatYen(row.totalTeikiProfit)}</td>
-        <td>${formatYen(row.totalTsujoSales)}</td><td>${formatYen(row.totalTsujoProfit)}</td>
-        ${brandCells}
-      </tr>`;
-    }).join('');
+  function heatmapColor(value, maxAbs) {
+    if (!maxAbs || value === 0) return '';
+    const ratio = Math.min(Math.abs(value) / maxAbs, 1);
+    const lightness = Math.round(92 - ratio * 42);
+    const hue = value < 0 ? 0 : 140;
+    return `background-color: hsl(${hue}, 65%, ${lightness}%);`;
+  }
 
-    return `<div class="brand-pivot-scroll">
-      <table class="brand-pivot-table">
+  function renderBrandMonthlySeriesHTML(series, selection) {
+    const brands = (series && series.brands) || [];
+    if (brands.length === 0) {
+      return '<p class="brand-series-empty">表示できるデータがありません（月次実績とブランド対応表を取込むと表示されます）。</p>';
+    }
+    const rows = (series && series.rows) || [];
+    const selectValue = selection || 'ALL';
+    const options = [`<option value="ALL"${selectValue === 'ALL' ? ' selected' : ''}>全体（合計）</option>`]
+      .concat(brands.map(b => `<option value="${b}"${b === selectValue ? ' selected' : ''}>${b}</option>`))
+      .join('');
+
+    const maxAbs = {
+      teikiSales: Math.max(0, ...rows.map(r => Math.abs(r.teikiSales))),
+      teikiProfit: Math.max(0, ...rows.map(r => Math.abs(r.teikiProfit))),
+      tsujoSales: Math.max(0, ...rows.map(r => Math.abs(r.tsujoSales))),
+      tsujoProfit: Math.max(0, ...rows.map(r => Math.abs(r.tsujoProfit))),
+    };
+
+    const bodyRows = rows.map(r => `
+      <tr>
+        <td>${r.yearMonth}</td>
+        <td class="col-teiki" style="${heatmapColor(r.teikiSales, maxAbs.teikiSales)}">${formatYen(r.teikiSales)}</td>
+        <td class="col-teiki" style="${heatmapColor(r.teikiProfit, maxAbs.teikiProfit)}">${formatYen(r.teikiProfit)}</td>
+        <td class="col-tsujo" style="${heatmapColor(r.tsujoSales, maxAbs.tsujoSales)}">${formatYen(r.tsujoSales)}</td>
+        <td class="col-tsujo" style="${heatmapColor(r.tsujoProfit, maxAbs.tsujoProfit)}">${formatYen(r.tsujoProfit)}</td>
+      </tr>`).join('');
+
+    return `
+      <div class="brand-series-controls">
+        ブランド: <select id="brandSeriesSelect">${options}</select>
+      </div>
+      <table class="brand-series-table">
         <thead>
-          <tr><th rowspan="2">月</th><th colspan="4">全体</th>${brandHeaderCells}</tr>
-          <tr><th>定期売上</th><th>定期粗利</th><th>通常売上</th><th>通常粗利</th>${brandSubHeaderCells}</tr>
+          <tr><th>月</th><th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th></tr>
         </thead>
         <tbody>${bodyRows}</tbody>
       </table>
-    </div>`;
+    `;
   }
 
-  return { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML };
+  return { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlySeriesHTML };
 });

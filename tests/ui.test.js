@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML } = require('../js/ui.js');
+const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlySeriesHTML } = require('../js/ui.js');
 
 test('formatYen adds yen sign and thousands separators, rounds to integer', () => {
   assert.equal(formatYen(1234567.8), '¥1,234,568');
@@ -92,41 +92,40 @@ test('renderProductBrandWarningsHTML pre-selects a guessed brand in the <select>
   assert.match(html, /<option value="MCTオイル">MCTオイル<\/option>/); // the non-guessed option has no selected attribute
 });
 
-test('renderBrandMonthlyPivotHTML renders a wide pivot table with month rows and brand column groups', () => {
-  const pivot = {
-    months: ['2025-06', '2026-06'],
-    brands: ['MCTオイル', 'MSMパウダー'],
-    rows: [
-      {
-        yearMonth: '2025-06',
-        totalTeikiSales: 100, totalTeikiProfit: 60, totalTsujoSales: 250, totalTsujoProfit: 150,
-        byBrand: {
-          'MCTオイル': { teikiSales: 100, teikiProfit: 60, tsujoSales: 0, tsujoProfit: 0 },
-          'MSMパウダー': { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 },
-        },
-      },
-      {
-        yearMonth: '2026-06',
-        totalTeikiSales: 300, totalTeikiProfit: 180, totalTsujoSales: 10, totalTsujoProfit: 5,
-        byBrand: {
-          'MCTオイル': { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 },
-          'MSMパウダー': { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 },
-        },
-      },
-    ],
-  };
-  const html = renderBrandMonthlyPivotHTML(pivot);
-  assert.match(html, /<table class="brand-pivot-table">/);
-  assert.match(html, /2025-06/);
-  assert.match(html, /2026-06/);
-  assert.match(html, /<th colspan="4">MCTオイル<\/th>/);
-  assert.match(html, /<th colspan="4">MSMパウダー<\/th>/);
-  assert.match(html, /¥100/);
-  assert.match(html, /¥300/);
+test('heatmapColor returns no color for a zero value or a zero column max, and a green/red hsl scale otherwise', () => {
+  assert.equal(heatmapColor(0, 100), '');
+  assert.equal(heatmapColor(50, 0), '');
+  assert.equal(heatmapColor(100, 100), 'background-color: hsl(140, 65%, 50%);'); // full intensity, positive -> green
+  assert.equal(heatmapColor(-100, 100), 'background-color: hsl(0, 65%, 50%);'); // full intensity, negative -> red
+  assert.equal(heatmapColor(-50, 100), 'background-color: hsl(0, 65%, 71%);'); // half intensity, negative
 });
 
-test('renderBrandMonthlyPivotHTML shows an empty-state message when there are no brands yet', () => {
-  const html = renderBrandMonthlyPivotHTML({ months: [], brands: [], rows: [] });
+test('renderBrandMonthlySeriesHTML renders a selector (全体 + each brand) and a compact 定期/通常 table for the selection', () => {
+  const series = {
+    brands: ['MCTオイル', 'MSMパウダー'],
+    rows: [
+      { yearMonth: '2025-06', teikiSales: 100, teikiProfit: 60, tsujoSales: 200, tsujoProfit: 120 },
+      { yearMonth: '2026-06', teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 },
+    ],
+  };
+  const html = renderBrandMonthlySeriesHTML(series, 'MCTオイル');
+  assert.match(html, /<select id="brandSeriesSelect">/);
+  assert.match(html, /<option value="ALL">全体（合計）<\/option>/);
+  assert.match(html, /<option value="MCTオイル" selected>MCTオイル<\/option>/);
+  assert.match(html, /<option value="MSMパウダー">MSMパウダー<\/option>/); // present, not selected
+  assert.match(html, /class="col-teiki"/);
+  assert.match(html, /class="col-tsujo"/);
+  assert.match(html, /2025-06/);
+  assert.match(html, /¥100/);
+});
+
+test('renderBrandMonthlySeriesHTML defaults the selector to ALL when no selection is given', () => {
+  const html = renderBrandMonthlySeriesHTML({ brands: ['MCTオイル'], rows: [] }, undefined);
+  assert.match(html, /<option value="ALL" selected>全体（合計）<\/option>/);
+});
+
+test('renderBrandMonthlySeriesHTML shows an empty-state message when there are no brands yet', () => {
+  const html = renderBrandMonthlySeriesHTML({ brands: [], rows: [] }, 'ALL');
   assert.doesNotMatch(html, /<table/);
   assert.match(html, /表示できるデータがありません/);
 });
