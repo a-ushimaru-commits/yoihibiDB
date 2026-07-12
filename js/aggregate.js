@@ -5,7 +5,7 @@
     root.YoiHibi = Object.assign(root.YoiHibi || {}, factory());
   }
 })(typeof window !== 'undefined' ? window : globalThis, function () {
-  const CHANNELS = ['TV', 'yahoo', 'その他', 'アマゾン', '卸', '楽天', '自社'];
+  const CHANNELS = ['自社', 'アマゾン', '楽天', 'yahoo', '卸', 'TV', 'その他'];
 
   function shiftYearMonth(yearMonth, yearDelta) {
     const [y, m] = yearMonth.split('-').map(Number);
