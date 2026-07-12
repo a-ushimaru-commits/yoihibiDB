@@ -108,5 +108,37 @@
     </div>`;
   }
 
-  return { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML };
+  function renderBrandMonthlyPivotHTML(pivot) {
+    if (!pivot || !pivot.brands || pivot.brands.length === 0) {
+      return '<p class="brand-pivot-empty">表示できるデータがありません（月次実績とブランド対応表を取込むと表示されます）。</p>';
+    }
+    const brandHeaderCells = pivot.brands.map(b => `<th colspan="4">${b}</th>`).join('');
+    const brandSubHeaderCells = pivot.brands
+      .map(() => '<th>定期売上</th><th>定期粗利</th><th>通常売上</th><th>通常粗利</th>')
+      .join('');
+    const bodyRows = pivot.rows.map(row => {
+      const brandCells = pivot.brands.map(b => {
+        const cell = row.byBrand[b];
+        return `<td>${formatYen(cell.teikiSales)}</td><td>${formatYen(cell.teikiProfit)}</td><td>${formatYen(cell.tsujoSales)}</td><td>${formatYen(cell.tsujoProfit)}</td>`;
+      }).join('');
+      return `<tr>
+        <td>${row.yearMonth}</td>
+        <td>${formatYen(row.totalTeikiSales)}</td><td>${formatYen(row.totalTeikiProfit)}</td>
+        <td>${formatYen(row.totalTsujoSales)}</td><td>${formatYen(row.totalTsujoProfit)}</td>
+        ${brandCells}
+      </tr>`;
+    }).join('');
+
+    return `<div class="brand-pivot-scroll">
+      <table class="brand-pivot-table">
+        <thead>
+          <tr><th rowspan="2">月</th><th colspan="4">全体</th>${brandHeaderCells}</tr>
+          <tr><th>定期売上</th><th>定期粗利</th><th>通常売上</th><th>通常粗利</th>${brandSubHeaderCells}</tr>
+        </thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  return { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML };
 });

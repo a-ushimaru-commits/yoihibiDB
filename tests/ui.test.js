@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML } = require('../js/ui.js');
+const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML } = require('../js/ui.js');
 
 test('formatYen adds yen sign and thousands separators, rounds to integer', () => {
   assert.equal(formatYen(1234567.8), '¥1,234,568');
@@ -90,4 +90,43 @@ test('renderProductBrandWarningsHTML pre-selects a guessed brand in the <select>
   );
   assert.match(html, /<option value="MSMパウダー" selected>MSMパウダー<\/option>/);
   assert.match(html, /<option value="MCTオイル">MCTオイル<\/option>/); // the non-guessed option has no selected attribute
+});
+
+test('renderBrandMonthlyPivotHTML renders a wide pivot table with month rows and brand column groups', () => {
+  const pivot = {
+    months: ['2025-06', '2026-06'],
+    brands: ['MCTオイル', 'MSMパウダー'],
+    rows: [
+      {
+        yearMonth: '2025-06',
+        totalTeikiSales: 100, totalTeikiProfit: 60, totalTsujoSales: 250, totalTsujoProfit: 150,
+        byBrand: {
+          'MCTオイル': { teikiSales: 100, teikiProfit: 60, tsujoSales: 0, tsujoProfit: 0 },
+          'MSMパウダー': { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 },
+        },
+      },
+      {
+        yearMonth: '2026-06',
+        totalTeikiSales: 300, totalTeikiProfit: 180, totalTsujoSales: 10, totalTsujoProfit: 5,
+        byBrand: {
+          'MCTオイル': { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 },
+          'MSMパウダー': { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 },
+        },
+      },
+    ],
+  };
+  const html = renderBrandMonthlyPivotHTML(pivot);
+  assert.match(html, /<table class="brand-pivot-table">/);
+  assert.match(html, /2025-06/);
+  assert.match(html, /2026-06/);
+  assert.match(html, /<th colspan="4">MCTオイル<\/th>/);
+  assert.match(html, /<th colspan="4">MSMパウダー<\/th>/);
+  assert.match(html, /¥100/);
+  assert.match(html, /¥300/);
+});
+
+test('renderBrandMonthlyPivotHTML shows an empty-state message when there are no brands yet', () => {
+  const html = renderBrandMonthlyPivotHTML({ months: [], brands: [], rows: [] });
+  assert.doesNotMatch(html, /<table/);
+  assert.match(html, /表示できるデータがありません/);
 });
