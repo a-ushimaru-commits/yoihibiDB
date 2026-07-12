@@ -26,6 +26,7 @@ table.brand-table th:first-child, table.brand-table td:first-child { text-align:
 table.brand-pivot-table { border-collapse: collapse; white-space: nowrap; }
 table.brand-pivot-table th, table.brand-pivot-table td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; border-right: 1px solid #f1f3f4; text-align: right; font-size: 13px; }
 table.brand-pivot-table th:first-child, table.brand-pivot-table td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
+table.brand-pivot-table th[colspan="4"] { text-align: left; }
 table.brand-pivot-table th.col-teiki, table.brand-pivot-table td.col-teiki { background: #e8f0fe; }
 table.brand-pivot-table th.col-tsujo, table.brand-pivot-table td.col-tsujo { background: #e6f4ea; }
 table.brand-pivot-table th.brand-band, table.brand-pivot-table td.brand-band { background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)); }

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {
   shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
   getMonthlyComparison, getChannelTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandTable,
-  getBrandMonthlyPivot,
+  getBrandMonthlyPivot, getChannelMonthlyPivot,
 } = require('../js/aggregate.js');
 
 test('shiftYearMonth moves the year and keeps the month', () => {
@@ -169,4 +169,38 @@ test('getBrandMonthlyPivot zero-fills a brand with no data in a given month, per
 test('getBrandMonthlyPivot returns empty months/brands/rows when both record sets are empty', () => {
   const pivot = getBrandMonthlyPivot({ baseRecords: [], monthlyRecords: [] });
   assert.deepEqual(pivot, { months: [], brands: [], rows: [] });
+});
+
+test('getChannelMonthlyPivot spans both 1期 and 2期 as one continuous month list, with all 7 channels in the fixed CHANNELS order', () => {
+  const pivot = getChannelMonthlyPivot(pivotSampleState());
+  assert.deepEqual(pivot.months, ['2025-06', '2026-06']);
+  assert.deepEqual(pivot.channels, ['自社', 'アマゾン', '楽天', 'yahoo', '卸', 'TV', 'その他']);
+});
+
+test('getChannelMonthlyPivot totals match the whole-company totals for the month', () => {
+  const pivot = getChannelMonthlyPivot(pivotSampleState());
+  const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
+  assert.equal(june2025.totalTeikiSales, 100);
+  assert.equal(june2025.totalTeikiProfit, 60);
+  assert.equal(june2025.totalTsujoSales, 250); // 200 (自社/MSMパウダー) + 50 (TV/blank brand)
+  assert.equal(june2025.totalTsujoProfit, 150);
+});
+
+test('getChannelMonthlyPivot zero-fills a channel with no data in a given month, per-channel split by 定期/通常', () => {
+  const pivot = getChannelMonthlyPivot(pivotSampleState());
+  const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
+  assert.deepEqual(june2025.byChannel['TV'], { teikiSales: 100, teikiProfit: 60, tsujoSales: 50, tsujoProfit: 30 });
+  assert.deepEqual(june2025.byChannel['自社'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 });
+  assert.deepEqual(june2025.byChannel['アマゾン'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 });
+
+  const june2026 = pivot.rows.find(r => r.yearMonth === '2026-06');
+  assert.deepEqual(june2026.byChannel['TV'], { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2026.byChannel['自社'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 10, tsujoProfit: 5 });
+});
+
+test('getChannelMonthlyPivot returns empty months/rows but all 7 channels when both record sets are empty', () => {
+  const pivot = getChannelMonthlyPivot({ baseRecords: [], monthlyRecords: [] });
+  assert.deepEqual(pivot.months, []);
+  assert.deepEqual(pivot.rows, []);
+  assert.deepEqual(pivot.channels, ['自社', 'アマゾン', '楽天', 'yahoo', '卸', 'TV', 'その他']);
 });
