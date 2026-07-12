@@ -22,7 +22,9 @@ table.channel-table th:first-child, table.channel-table td:first-child { text-al
 table.brand-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
 table.brand-table th, table.brand-table td { padding: 8px 12px; border-bottom: 1px solid #e0e0e0; text-align: right; }
 table.brand-table th:first-child, table.brand-table td:first-child { text-align: left; }
-.brand-pivot-scroll { overflow-x: auto; background: #fff; border-radius: 8px; }
-table.brand-pivot-table { border-collapse: collapse; white-space: nowrap; }
-table.brand-pivot-table th, table.brand-pivot-table td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; border-right: 1px solid #f1f3f4; text-align: right; font-size: 13px; }
-table.brand-pivot-table th:first-child, table.brand-pivot-table td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
+.brand-series-controls { margin-bottom: 8px; }
+table.brand-series-table { border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+table.brand-series-table th, table.brand-series-table td { padding: 8px 12px; border-bottom: 1px solid #e0e0e0; text-align: right; }
+table.brand-series-table th:first-child, table.brand-series-table td:first-child { text-align: left; }
+table.brand-series-table th.col-teiki, table.brand-series-table td.col-teiki { background: #e8f0fe; }
+table.brand-series-table th.col-tsujo, table.brand-series-table td.col-tsujo { background: #e6f4ea; }
