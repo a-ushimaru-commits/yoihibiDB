@@ -227,9 +227,9 @@
     };
   }
 
-  function getOwnChannelMonthlySummary(state) {
+  function getOwnChannelMonthlySummary(state, yearMonth) {
     const allSelfRecords = filterRecords(collectPivotRecords(state), { channel: '自社' });
-    const months = Array.from(new Set(allSelfRecords.map(r => r.yearMonth))).sort();
+    const months = yearMonth ? [yearMonth] : Array.from(new Set(allSelfRecords.map(r => r.yearMonth))).sort();
 
     const brandSales = new Map();
     allSelfRecords.forEach(r => {

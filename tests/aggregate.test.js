@@ -461,3 +461,22 @@ test('getOwnChannelMonthlySummary returns empty months/brands/rows when there is
   const summary = getOwnChannelMonthlySummary({ baseRecords: [], monthlyRecords: [] });
   assert.deepEqual(summary, { months: [], brands: [], rows: [] });
 });
+
+test('getOwnChannelMonthlySummary restricts to a single requested month, without dropping the full brand universe from other months', () => {
+  const summary = getOwnChannelMonthlySummary(ownChannelSummaryState(), '2026-06');
+  assert.deepEqual(summary.months, ['2026-06']);
+  assert.equal(summary.rows.length, 1);
+  assert.equal(summary.rows[0].yearMonth, '2026-06');
+  // brands are still drawn from the whole dataset (BrandA/BrandB), not just the requested month
+  assert.deepEqual(summary.brands, ['BrandA', 'BrandB']);
+  // yoy/ttmYoy for the requested month are computed exactly as in the full-timeline case
+  assert.equal(summary.rows[0].yoy.teiki.qtyPct, 0.2);
+  assert.equal(summary.rows[0].ttmYoy.teiki.qtyPct, 0.4);
+});
+
+test('getOwnChannelMonthlySummary zero-fills a requested month that has no 自社 data at all, rather than omitting it', () => {
+  const summary = getOwnChannelMonthlySummary(ownChannelSummaryState(), '2026-12');
+  assert.deepEqual(summary.months, ['2026-12']);
+  assert.equal(summary.rows.length, 1);
+  assert.deepEqual(summary.rows[0].total, { qty: 0, sales: 0, profit: 0, profitRate: 0 });
+});
