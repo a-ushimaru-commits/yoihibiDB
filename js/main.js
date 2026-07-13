@@ -48,10 +48,11 @@
         store.setProductBrandMapping(mapping);
         showStatus(`商品コード→ブランド対応表を取込みました（${Object.keys(mapping).length}件）`);
       } else if (type === 'targets') {
-        const parsedTargets = parseTargetsWorkbook(workbook, TARGETS_FISCAL_YEAR_START);
+        const { targets: parsedTargets, ownChannelTargets: parsedOwnChannelTargets } = parseTargetsWorkbook(workbook, TARGETS_FISCAL_YEAR_START);
         const parsedMonths = new Set(parsedTargets.map(t => t.yearMonth));
-        const merged = store.getState().targets.filter(t => !parsedMonths.has(t.yearMonth)).concat(parsedTargets);
-        store.setTargets(merged);
+        store.setTargets(store.getState().targets.filter(t => !parsedMonths.has(t.yearMonth)).concat(parsedTargets));
+        const parsedOwnMonths = new Set(parsedOwnChannelTargets.map(t => t.yearMonth));
+        store.setOwnChannelTargets(store.getState().ownChannelTargets.filter(t => !parsedOwnMonths.has(t.yearMonth)).concat(parsedOwnChannelTargets));
         showStatus(`年間目標を取込みました（${parsedTargets.length}ヶ月分）`);
       } else if (type === 'monthly') {
         const { records, unmappedMedia, unmappedProducts, janUnitCosts } = parseMonthlyWorkbook(workbook, store.getState().mediaMapping, store.getState().productBrandMapping);

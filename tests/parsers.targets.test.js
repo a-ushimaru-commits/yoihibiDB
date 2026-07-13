@@ -25,11 +25,35 @@ function buildTargetsWorkbook() {
 }
 
 test('parseTargetsWorkbook extracts sales/gross-profit targets from the 合計 row\'s 予算 columns, per month, converted from 千円 to yen', () => {
-  const targets = parseTargetsWorkbook(buildTargetsWorkbook(), 2026);
+  const { targets } = parseTargetsWorkbook(buildTargetsWorkbook(), 2026);
   assert.deepEqual(targets, [
     { yearMonth: '2026-06', salesTarget: 12200000, profitTarget: (12200 - 4225) * 1000 },
     { yearMonth: '2026-07', salesTarget: 13000000, profitTarget: (13000 - 4500) * 1000 },
   ]);
+});
+
+test('parseTargetsWorkbook also extracts ownChannelTargets from the 自社サイト row, independently of 合計', () => {
+  const { ownChannelTargets } = parseTargetsWorkbook(buildTargetsWorkbook(), 2026);
+  assert.deepEqual(ownChannelTargets, [
+    { yearMonth: '2026-06', salesTarget: 5500000, profitTarget: (5500 - 1925) * 1000 },
+    { yearMonth: '2026-07', salesTarget: 5500000, profitTarget: (5500 - 1925) * 1000 },
+  ]);
+});
+
+test('parseTargetsWorkbook returns an empty ownChannelTargets (without throwing) when there is no 自社サイト row', () => {
+  const rows = [
+    [null, null, null, '6月', '6月', '6月'],
+    [null, '媒体', '項目', '予算', '見込', '実績'],
+    [null, '合計', '売上', 12200, null, null],
+    [null, null, '原価', 4225, null, null],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'よい日々');
+
+  const { targets, ownChannelTargets } = parseTargetsWorkbook(wb, 2026);
+  assert.deepEqual(ownChannelTargets, []);
+  assert.equal(targets.length, 1); // 合計 is still required and present
 });
 
 test('parseTargetsWorkbook maps months 12 and after to the following calendar year, per the given fiscal-year start', () => {
@@ -43,7 +67,7 @@ test('parseTargetsWorkbook maps months 12 and after to the following calendar ye
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'よい日々');
 
-  const targets = parseTargetsWorkbook(wb, 2026);
+  const { targets } = parseTargetsWorkbook(wb, 2026);
   assert.deepEqual(targets, [
     { yearMonth: '2026-12', salesTarget: 5000000, profitTarget: 3000000 },
     { yearMonth: '2027-01', salesTarget: 6000000, profitTarget: 3500000 },
@@ -61,7 +85,7 @@ test('parseTargetsWorkbook ignores aggregate columns (上期計/下期計/年間
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'よい日々');
 
-  const targets = parseTargetsWorkbook(wb, 2026);
+  const { targets } = parseTargetsWorkbook(wb, 2026);
   assert.deepEqual(targets, [{ yearMonth: '2026-06', salesTarget: 12200000, profitTarget: (12200 - 4225) * 1000 }]);
 });
 

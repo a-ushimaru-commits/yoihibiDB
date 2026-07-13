@@ -403,22 +403,31 @@
       budgetCols.push({ yearMonth: `${year}-${String(monthNum).padStart(2, '0')}`, colIndex: i });
     }
 
-    const totalRowIdx = rows.findIndex(row => row && row[mediaCol] === '合計' && row[itemCol] === '売上');
-    if (totalRowIdx === -1) {
-      throw new Error('目標ファイルに「合計」の売上行が見つかりません。');
-    }
-    const salesRow = rows[totalRowIdx];
-    const costRow = rows[totalRowIdx + 1];
-    if (!costRow || (costRow[itemCol] == null ? '' : String(costRow[itemCol]).trim()) !== '原価') {
-      throw new Error('目標ファイルの「合計」行の直後に原価行が見つかりません。');
+    const THOUSAND_YEN = 1000; // figures in this workbook are 千円 (thousand-yen) units, unlike the raw-yen records elsewhere
+
+    function extractTargetsForMedia(mediaName, required) {
+      const salesRowIdx = rows.findIndex(row => row && row[mediaCol] === mediaName && row[itemCol] === '売上');
+      if (salesRowIdx === -1) {
+        if (required) throw new Error(`目標ファイルに「${mediaName}」の売上行が見つかりません。`);
+        return [];
+      }
+      const salesRow = rows[salesRowIdx];
+      const costRow = rows[salesRowIdx + 1];
+      if (!costRow || (costRow[itemCol] == null ? '' : String(costRow[itemCol]).trim()) !== '原価') {
+        if (required) throw new Error(`目標ファイルの「${mediaName}」行の直後に原価行が見つかりません。`);
+        return [];
+      }
+      return budgetCols.map(({ yearMonth, colIndex }) => {
+        const sales = (Number(salesRow[colIndex]) || 0) * THOUSAND_YEN;
+        const cost = (Number(costRow[colIndex]) || 0) * THOUSAND_YEN;
+        return { yearMonth, salesTarget: sales, profitTarget: sales - cost };
+      });
     }
 
-    const THOUSAND_YEN = 1000; // figures in this workbook are 千円 (thousand-yen) units, unlike the raw-yen records elsewhere
-    return budgetCols.map(({ yearMonth, colIndex }) => {
-      const sales = (Number(salesRow[colIndex]) || 0) * THOUSAND_YEN;
-      const cost = (Number(costRow[colIndex]) || 0) * THOUSAND_YEN;
-      return { yearMonth, salesTarget: sales, profitTarget: sales - cost };
-    });
+    return {
+      targets: extractTargetsForMedia('合計', true),
+      ownChannelTargets: extractTargetsForMedia('自社サイト', false),
+    };
   }
 
   function detectFileType(fileName, sheetNames) {
