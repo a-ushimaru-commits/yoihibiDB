@@ -152,6 +152,12 @@ test('heatmapColor returns no color for a zero value or a zero column max, and a
   assert.equal(heatmapColor(-50, 100), 'background-color: hsl(0, 65%, 71%);'); // half intensity, negative
 });
 
+test('heatmapColor uses a blue hue for positive 定期 cells (matching 自社月別サマリーの定期=薄青) and keeps 通常/negative unchanged', () => {
+  assert.equal(heatmapColor(100, 100, 'teiki'), 'background-color: hsl(218, 65%, 50%);'); // positive teiki -> blue
+  assert.equal(heatmapColor(100, 100, 'tsujo'), 'background-color: hsl(140, 65%, 50%);'); // positive tsujo -> green, unchanged
+  assert.equal(heatmapColor(-100, 100, 'teiki'), 'background-color: hsl(0, 65%, 50%);'); // negative teiki still -> red
+});
+
 function samplePivot() {
   return {
     months: ['2025-06', '2026-06'],

@@ -124,11 +124,11 @@
     </div>`;
   }
 
-  function heatmapColor(value, maxAbs) {
+  function heatmapColor(value, maxAbs, type) {
     if (!maxAbs || value === 0) return '';
     const ratio = Math.min(Math.abs(value) / maxAbs, 1);
     const lightness = Math.round(92 - ratio * 42);
-    const hue = value < 0 ? 0 : 140;
+    const hue = value < 0 ? 0 : (type === 'teiki' ? 218 : 140);
     return `background-color: hsl(${hue}, 65%, ${lightness}%);`;
   }
 
@@ -162,17 +162,17 @@
         const cell = row.byBrand[b];
         const m = brandMax[b];
         const band = bandOf(i);
-        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales)}">${formatYen(cell.teikiSales)}</td>`
-          + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiProfit, m.teikiProfit)}">${formatYen(cell.teikiProfit)}</td>`
-          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoSales, m.tsujoSales)}">${formatYen(cell.tsujoSales)}</td>`
-          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit)}">${formatYen(cell.tsujoProfit)}</td>`;
+        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales, 'teiki')}">${formatYen(cell.teikiSales)}</td>`
+          + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiProfit, m.teikiProfit, 'teiki')}">${formatYen(cell.teikiProfit)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoSales, m.tsujoSales, 'tsujo')}">${formatYen(cell.tsujoSales)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit, 'tsujo')}">${formatYen(cell.tsujoProfit)}</td>`;
       }).join('');
       return `<tr>
         <td>${row.yearMonth}</td>
-        <td class="col-teiki" style="${heatmapColor(row.totalTeikiSales, totalMax.teikiSales)}">${formatYen(row.totalTeikiSales)}</td>
-        <td class="col-teiki" style="${heatmapColor(row.totalTeikiProfit, totalMax.teikiProfit)}">${formatYen(row.totalTeikiProfit)}</td>
-        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoSales, totalMax.tsujoSales)}">${formatYen(row.totalTsujoSales)}</td>
-        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoProfit, totalMax.tsujoProfit)}">${formatYen(row.totalTsujoProfit)}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiSales, totalMax.teikiSales, 'teiki')}">${formatYen(row.totalTeikiSales)}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiProfit, totalMax.teikiProfit, 'teiki')}">${formatYen(row.totalTeikiProfit)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoSales, totalMax.tsujoSales, 'tsujo')}">${formatYen(row.totalTsujoSales)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoProfit, totalMax.tsujoProfit, 'tsujo')}">${formatYen(row.totalTsujoProfit)}</td>
         ${brandCells}
       </tr>`;
     }).join('');
@@ -218,17 +218,17 @@
         const cell = row.byChannel[c];
         const m = channelMax[c];
         const band = bandOf(i);
-        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales)}">${formatYen(cell.teikiSales)}</td>`
-          + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiProfit, m.teikiProfit)}">${formatYen(cell.teikiProfit)}</td>`
-          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoSales, m.tsujoSales)}">${formatYen(cell.tsujoSales)}</td>`
-          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit)}">${formatYen(cell.tsujoProfit)}</td>`;
+        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales, 'teiki')}">${formatYen(cell.teikiSales)}</td>`
+          + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiProfit, m.teikiProfit, 'teiki')}">${formatYen(cell.teikiProfit)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoSales, m.tsujoSales, 'tsujo')}">${formatYen(cell.tsujoSales)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit, 'tsujo')}">${formatYen(cell.tsujoProfit)}</td>`;
       }).join('');
       return `<tr>
         <td>${row.yearMonth}</td>
-        <td class="col-teiki" style="${heatmapColor(row.totalTeikiSales, totalMax.teikiSales)}">${formatYen(row.totalTeikiSales)}</td>
-        <td class="col-teiki" style="${heatmapColor(row.totalTeikiProfit, totalMax.teikiProfit)}">${formatYen(row.totalTeikiProfit)}</td>
-        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoSales, totalMax.tsujoSales)}">${formatYen(row.totalTsujoSales)}</td>
-        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoProfit, totalMax.tsujoProfit)}">${formatYen(row.totalTsujoProfit)}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiSales, totalMax.teikiSales, 'teiki')}">${formatYen(row.totalTeikiSales)}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiProfit, totalMax.teikiProfit, 'teiki')}">${formatYen(row.totalTeikiProfit)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoSales, totalMax.tsujoSales, 'tsujo')}">${formatYen(row.totalTsujoSales)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoProfit, totalMax.tsujoProfit, 'tsujo')}">${formatYen(row.totalTsujoProfit)}</td>
         ${channelCells}
       </tr>`;
     }).join('');
