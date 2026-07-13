@@ -23,6 +23,10 @@ test('detects daily file by .csv extension or filename prefix', () => {
   assert.equal(detectFileType('anything.csv', null), 'daily');
 });
 
+test('detects targets file by filename prefix', () => {
+  assert.equal(detectFileType('よい日々目標.xlsx', ['よい日々']), 'targets');
+});
+
 test('returns unknown for unrecognized files', () => {
   assert.equal(detectFileType('random.xlsx', ['Sheet1']), 'unknown');
 });

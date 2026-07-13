@@ -345,15 +345,66 @@
     return { records: Array.from(agg.values()), unmappedMedia, unmappedProducts };
   }
 
+  const TARGET_MONTH_NAME_TO_NUM = {
+    '6月': 6, '7月': 7, '8月': 8, '9月': 9, '10月': 10, '11月': 11,
+    '12月': 12, '1月': 1, '2月': 2, '3月': 3, '4月': 4, '5月': 5,
+  };
+
+  function parseTargetsWorkbook(workbook, fiscalYearStartYear) {
+    const sheetName = workbook.SheetNames[0];
+    const rows = sheetToRows(workbook, sheetName);
+    if (!rows) {
+      throw new Error('目標ファイルのシートが読み込めません。');
+    }
+    const headerIdx = rows.findIndex(row => row && row.includes('媒体') && row.includes('項目'));
+    if (headerIdx === -1) {
+      throw new Error('目標ファイルに必要な列（媒体・項目）が見つかりません。');
+    }
+    const header = rows[headerIdx].map(v => (v == null ? '' : String(v).trim()));
+    const col = name => header.indexOf(name);
+    const mediaCol = col('媒体');
+    const itemCol = col('項目');
+    const monthRow = (rows[headerIdx - 1] || []).map(v => (v == null ? '' : String(v).trim()));
+
+    const budgetCols = [];
+    const seenMonths = new Set();
+    for (let i = 0; i < header.length; i++) {
+      if (header[i] !== '予算') continue;
+      const monthName = monthRow[i];
+      const monthNum = TARGET_MONTH_NAME_TO_NUM[monthName];
+      if (!monthNum || seenMonths.has(monthName)) continue;
+      seenMonths.add(monthName);
+      const year = monthNum >= 6 ? fiscalYearStartYear : fiscalYearStartYear + 1;
+      budgetCols.push({ yearMonth: `${year}-${String(monthNum).padStart(2, '0')}`, colIndex: i });
+    }
+
+    const totalRowIdx = rows.findIndex(row => row && row[mediaCol] === '合計' && row[itemCol] === '売上');
+    if (totalRowIdx === -1) {
+      throw new Error('目標ファイルに「合計」の売上行が見つかりません。');
+    }
+    const salesRow = rows[totalRowIdx];
+    const costRow = rows[totalRowIdx + 1];
+    if (!costRow || (costRow[itemCol] == null ? '' : String(costRow[itemCol]).trim()) !== '原価') {
+      throw new Error('目標ファイルの「合計」行の直後に原価行が見つかりません。');
+    }
+
+    return budgetCols.map(({ yearMonth, colIndex }) => {
+      const sales = Number(salesRow[colIndex]) || 0;
+      const cost = Number(costRow[colIndex]) || 0;
+      return { yearMonth, salesTarget: sales, profitTarget: sales - cost };
+    });
+  }
+
   function detectFileType(fileName, sheetNames) {
     const name = fileName || '';
     const sheets = sheetNames || [];
     if (/^分解詳細リスト/.test(name)) return 'brandLookup';
+    if (/^よい日々目標/.test(name)) return 'targets';
     if (/^粗利分析_よい日々1期/.test(name) || sheets.includes('詳細明細')) return 'base';
     if (/^商品別収益/.test(name) || sheets.includes('売上明細_提出')) return 'monthly';
     if (/\.csv$/i.test(name) || /^受注_売上一覧表/.test(name)) return 'daily';
     return 'unknown';
   }
 
-  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode, parseBrandLookup, guessBrandForProductCode };
+  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode, parseBrandLookup, guessBrandForProductCode, parseTargetsWorkbook };
 });
