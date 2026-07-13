@@ -10,7 +10,7 @@ function fakeBackend() {
 test('getState returns empty structure when nothing stored', () => {
   const store = createStore(fakeBackend());
   const state = store.getState();
-  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], mediaMapping: {}, productBrandMapping: {}, janUnitCosts: {} });
+  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], ownChannelTargets: [], mediaMapping: {}, productBrandMapping: {}, janUnitCosts: {} });
 });
 
 test('setBaseRecords persists and getState reflects it', () => {
@@ -50,6 +50,15 @@ test('setTargets, setMediaMapping, and setProductBrandMapping replace their sect
   assert.equal(state.targets[0].salesTarget, 1000000);
   assert.equal(state.mediaMapping['新媒体'], 'TV');
   assert.equal(state.productBrandMapping['FH0009999999999'], 'MCTオイル');
+});
+
+test('setOwnChannelTargets replaces the 自社 channel target section independently of setTargets', () => {
+  const store = createStore(fakeBackend());
+  store.setTargets([{ yearMonth: '2026-06', salesTarget: 1000000, profitTarget: 400000 }]);
+  store.setOwnChannelTargets([{ yearMonth: '2026-06', salesTarget: 550000, profitTarget: 220000 }]);
+  const state = store.getState();
+  assert.equal(state.targets[0].salesTarget, 1000000);
+  assert.equal(state.ownChannelTargets[0].salesTarget, 550000);
 });
 
 test('upsertJanUnitCosts merges in new JAN unit costs, letting newer values overwrite matching JANs while keeping others', () => {
