@@ -42,8 +42,14 @@
     return (state.targets || []).find(t => t.yearMonth === yearMonth) || null;
   }
 
+  function monthlyOrDailyRecords(state, yearMonth) {
+    const monthly = filterRecords(state.monthlyRecords || [], { yearMonth });
+    if (monthly.length > 0) return monthly;
+    return filterRecords(state.dailyRecords || [], { yearMonth });
+  }
+
   function getMonthlyComparison(state, yearMonth) {
-    const current = sumRecords(filterRecords(state.monthlyRecords, { yearMonth }));
+    const current = sumRecords(monthlyOrDailyRecords(state, yearMonth));
     const baseMonth = shiftYearMonth(yearMonth, -1);
     const base = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth }));
     const target = findTarget(state, yearMonth);
@@ -61,8 +67,9 @@
 
   function getChannelTable(state, yearMonth) {
     const baseMonth = shiftYearMonth(yearMonth, -1);
+    const monthRecords = monthlyOrDailyRecords(state, yearMonth);
     return CHANNELS.map(channel => {
-      const current = sumRecords(filterRecords(state.monthlyRecords, { yearMonth, channel }));
+      const current = sumRecords(filterRecords(monthRecords, { channel }));
       const base = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth, channel }));
       return {
         channel,
@@ -76,10 +83,10 @@
 
   function getBrandTable(state, yearMonth) {
     const baseMonth = shiftYearMonth(yearMonth, -1);
-    const current = filterRecords(state.monthlyRecords, { yearMonth });
+    const current = monthlyOrDailyRecords(state, yearMonth);
     const brands = Array.from(new Set(current.filter(r => r.brand != null).map(r => r.brand)));
     const rows = brands.map(brand => {
-      const cur = sumRecords(filterRecords(state.monthlyRecords, { yearMonth, brand }));
+      const cur = sumRecords(filterRecords(current, { brand }));
       const base = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth, brand }));
       return {
         brand,
@@ -200,9 +207,11 @@
   }
 
   function getMonthlyTrend(state) {
-    const months = Array.from(new Set(state.monthlyRecords.map(r => r.yearMonth))).sort();
+    const months = Array.from(new Set(
+      state.monthlyRecords.map(r => r.yearMonth).concat((state.dailyRecords || []).map(r => r.yearMonth))
+    )).sort();
     return months.map(yearMonth => {
-      const current = sumRecords(filterRecords(state.monthlyRecords, { yearMonth }));
+      const current = sumRecords(monthlyOrDailyRecords(state, yearMonth));
       const baseMonth = shiftYearMonth(yearMonth, -1);
       const base = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth }));
       const target = findTarget(state, yearMonth);

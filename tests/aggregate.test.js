@@ -115,6 +115,62 @@ test('getBrandTable returns an empty array when the month has no brand-bearing r
   assert.deepEqual(table, []);
 });
 
+function dailyOnlyMonthState() {
+  return {
+    baseRecords: [
+      { yearMonth: '2025-07', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 500, cost: 200, profit: 300 },
+    ],
+    monthlyRecords: [
+      // 2026-06 already has confirmed monthly data -- its daily records (if any) must be ignored
+      { yearMonth: '2026-06', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 1200, cost: 480, profit: 720 },
+    ],
+    dailyRecords: [
+      { yearMonth: '2026-06', date: '2026-06-01', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 999, cost: 999, profit: 999 }, // must be ignored (monthly already exists)
+      // 2026-07 has ONLY daily records (no monthly xlsx yet) -- must be used as an interim aggregate
+      { yearMonth: '2026-07', date: '2026-07-01', channel: '自社', type: '通常', brand: 'MSMパウダー', sales: 400, cost: 150, profit: 250 },
+      { yearMonth: '2026-07', date: '2026-07-02', channel: 'TV', type: '定期', brand: 'MCTオイル', sales: 100, cost: 40, profit: 60 },
+    ],
+    targets: [],
+    mediaMapping: {},
+    productBrandMapping: {},
+  };
+}
+
+test('getMonthlyComparison falls back to daily records for a month with no confirmed monthly data', () => {
+  const cmp = getMonthlyComparison(dailyOnlyMonthState(), '2026-07');
+  assert.equal(cmp.sales, 500); // 400 + 100
+  assert.equal(cmp.profit, 310); // 250 + 60
+});
+
+test('getMonthlyComparison ignores daily records for a month that already has confirmed monthly data', () => {
+  const cmp = getMonthlyComparison(dailyOnlyMonthState(), '2026-06');
+  assert.equal(cmp.sales, 1200); // NOT 1200+999
+});
+
+test('getChannelTable falls back to daily records for a month with no confirmed monthly data', () => {
+  const table = getChannelTable(dailyOnlyMonthState(), '2026-07');
+  const jisha = table.find(r => r.channel === '自社');
+  const tv = table.find(r => r.channel === 'TV');
+  assert.equal(jisha.sales, 400);
+  assert.equal(tv.sales, 100);
+});
+
+test('getBrandTable falls back to daily records for a month with no confirmed monthly data', () => {
+  const table = getBrandTable(dailyOnlyMonthState(), '2026-07');
+  const msm = table.find(r => r.brand === 'MSMパウダー');
+  const mct = table.find(r => r.brand === 'MCTオイル');
+  assert.equal(msm.sales, 400);
+  assert.equal(mct.sales, 100);
+});
+
+test('getMonthlyTrend includes a daily-only month, falling back to its daily aggregate', () => {
+  const trend = getMonthlyTrend(dailyOnlyMonthState());
+  assert.deepEqual(trend.map(t => t.yearMonth), ['2026-06', '2026-07']);
+  const july = trend.find(t => t.yearMonth === '2026-07');
+  assert.equal(july.currentSales, 500);
+  assert.equal(july.currentProfit, 310);
+});
+
 function pivotSampleState() {
   return {
     baseRecords: [
