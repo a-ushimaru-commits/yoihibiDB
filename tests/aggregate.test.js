@@ -74,12 +74,12 @@ function sampleState() {
       { yearMonth: '2025-06', channel: '自社', type: '定期', brand: 'MSMパウダー', sales: 2000, cost: 800, profit: 1200 },
     ],
     monthlyRecords: [
-      { yearMonth: '2026-06', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 1200, cost: 480, profit: 720 },
-      { yearMonth: '2026-06', channel: '自社', type: '定期', brand: 'MSMパウダー', sales: 1800, cost: 720, profit: 1080 },
+      { yearMonth: '2026-06', channel: 'TV', type: '通常', brand: 'MCTオイル', qty: 10, sales: 1200, cost: 480, profit: 720 },
+      { yearMonth: '2026-06', channel: '自社', type: '定期', brand: 'MSMパウダー', qty: 15, sales: 1800, cost: 720, profit: 1080 },
     ],
     dailyRecords: [
-      { yearMonth: '2026-06', date: '2026-06-01', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 100, cost: 40, profit: 60 },
-      { yearMonth: '2026-06', date: '2026-06-02', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 200, cost: 80, profit: 120 },
+      { yearMonth: '2026-06', date: '2026-06-01', channel: 'TV', type: '通常', brand: 'MCTオイル', qty: 2, sales: 100, cost: 40, profit: 60 },
+      { yearMonth: '2026-06', date: '2026-06-02', channel: 'TV', type: '通常', brand: 'MCTオイル', qty: 4, sales: 200, cost: 80, profit: 120 },
     ],
     targets: [{ yearMonth: '2026-06', salesTarget: 3000, profitTarget: 1800 }],
     mediaMapping: {},
@@ -152,6 +152,15 @@ test('getDailyCumulativeSeries produces one entry per day with actual cumulative
   assert.equal(series[1].paceSales, 200);
 });
 
+test('getDailyCumulativeSeries also cumulates 定期数量/通常数量 (qty) per day, by type', () => {
+  const series = getDailyCumulativeSeries(sampleState(), '2026-06');
+  // only 通常/TV daily records exist in the fixture: day1 qty=2, day2 qty=4
+  assert.equal(series[0].actualTeikiQty, 0);
+  assert.equal(series[0].actualTsujoQty, 2);
+  assert.equal(series[1].actualTeikiQty, 0);
+  assert.equal(series[1].actualTsujoQty, 6);
+});
+
 test('getMonthlyTrend returns one row per month present in monthlyRecords with base and target', () => {
   const trend = getMonthlyTrend(sampleState());
   assert.equal(trend.length, 1);
@@ -159,6 +168,12 @@ test('getMonthlyTrend returns one row per month present in monthlyRecords with b
   assert.equal(trend[0].currentSales, 3000);
   assert.equal(trend[0].baseSales, 3000);
   assert.equal(trend[0].targetSales, 3000);
+});
+
+test('getMonthlyTrend also includes 定期数量/通常数量 (qty) split by type for the month', () => {
+  const trend = getMonthlyTrend(sampleState());
+  assert.equal(trend[0].teikiQty, 15); // 自社/定期/MSMパウダー
+  assert.equal(trend[0].tsujoQty, 10); // TV/通常/MCTオイル
 });
 
 test('getBrandTable returns one row per brand present in the month, sorted by descending sales, with 1期比', () => {

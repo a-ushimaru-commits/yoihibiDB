@@ -305,26 +305,32 @@
   function getDailyCumulativeSeries(state, yearMonth) {
     const daily = filterRecords(state.dailyRecords, { yearMonth });
     const nDays = daysInMonth(yearMonth);
-    const dailyTotals = Array.from({ length: nDays }, () => ({ sales: 0, profit: 0 }));
+    const dailyTotals = Array.from({ length: nDays }, () => ({ sales: 0, profit: 0, teikiQty: 0, tsujoQty: 0 }));
     daily.forEach(r => {
       const day = Number(r.date.slice(8, 10));
       if (day >= 1 && day <= nDays) {
         dailyTotals[day - 1].sales += r.sales;
         dailyTotals[day - 1].profit += r.profit;
+        if (r.type === '定期') dailyTotals[day - 1].teikiQty += r.qty || 0;
+        else if (r.type === '通常') dailyTotals[day - 1].tsujoQty += r.qty || 0;
       }
     });
     const baseMonth = shiftYearMonth(yearMonth, -1);
     const baseTotals = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth }));
 
     const series = [];
-    let cumSales = 0, cumProfit = 0;
+    let cumSales = 0, cumProfit = 0, cumTeikiQty = 0, cumTsujoQty = 0;
     for (let d = 0; d < nDays; d++) {
       cumSales += dailyTotals[d].sales;
       cumProfit += dailyTotals[d].profit;
+      cumTeikiQty += dailyTotals[d].teikiQty;
+      cumTsujoQty += dailyTotals[d].tsujoQty;
       series.push({
         day: d + 1,
         actualSales: cumSales,
         actualProfit: cumProfit,
+        actualTeikiQty: cumTeikiQty,
+        actualTsujoQty: cumTsujoQty,
         paceSales: baseTotals.sales * ((d + 1) / nDays),
         paceProfit: baseTotals.profit * ((d + 1) / nDays),
       });
@@ -337,7 +343,10 @@
       state.monthlyRecords.map(r => r.yearMonth).concat((state.dailyRecords || []).map(r => r.yearMonth))
     )).sort();
     return months.map(yearMonth => {
-      const current = sumRecords(monthlyOrDailyRecords(state, yearMonth));
+      const monthRecords = monthlyOrDailyRecords(state, yearMonth);
+      const current = sumRecords(monthRecords);
+      const teiki = sumRecords(filterRecords(monthRecords, { type: '定期' }));
+      const tsujo = sumRecords(filterRecords(monthRecords, { type: '通常' }));
       const baseMonth = shiftYearMonth(yearMonth, -1);
       const base = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth }));
       const target = findTarget(state, yearMonth);
@@ -345,6 +354,8 @@
         yearMonth,
         currentSales: current.sales,
         currentProfit: current.profit,
+        teikiQty: teiki.qty,
+        tsujoQty: tsujo.qty,
         baseSales: base.sales,
         baseProfit: base.profit,
         targetSales: target ? target.salesTarget : null,
