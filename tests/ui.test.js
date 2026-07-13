@@ -47,6 +47,18 @@ test('renderKpiCardsHTML also shows 前月比 (MoM) and 目標達成率(日割),
   assert.match(html, /105\.0%/); // profitTargetRateProrated
 });
 
+test('renderKpiCardsHTML colors positive percentages red and negative ones blue, leaving N/A and 0 as plain black text', () => {
+  const html = renderKpiCardsHTML({
+    sales: 3000000, profit: 1200000, profitRate: 0.4,
+    salesYoY: -0.852, profitYoY: 0, salesMoM: 0.179, profitMoM: null,
+    salesTargetRate: 0.555, profitTargetRate: 0.75,
+  });
+  assert.match(html, /<span class="kpi-num-negative">-85\.2%<\/span>/); // salesYoY < 0 -> blue
+  assert.match(html, /<span class="kpi-num-positive">17\.9%<\/span>/); // salesMoM > 0 -> red
+  assert.doesNotMatch(html, /<span[^>]*>0\.0%<\/span>/); // profitYoY === 0 -> plain, no color span
+  assert.doesNotMatch(html, /<span[^>]*>N\/A<\/span>/); // profitMoM null -> plain, no color span
+});
+
 test('renderChannelTableHTML emits one row per channel with sales/profit/profitRate/salesYoY', () => {
   const html = renderChannelTableHTML([
     { channel: 'TV', sales: 1000, profit: 400, profitRate: 0.4, salesYoY: 0.2 },
