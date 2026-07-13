@@ -154,6 +154,7 @@
     if (!yearMonth) return;
 
     el('kpiRow').innerHTML = renderKpiCardsHTML(getMonthlyComparison(state, yearMonth));
+    el('ownChannelKpiRow').innerHTML = renderKpiCardsHTML(getMonthlyComparison(state, yearMonth, { channel: '自社', targets: state.ownChannelTargets }));
     el('channelTable').innerHTML = renderChannelTableHTML(getChannelTable(state, yearMonth));
     el('brandTable').innerHTML = renderBrandTableHTML(getBrandTable(state, yearMonth));
     el('ownChannelBrandMonthlyPivot').innerHTML = renderBrandMonthlyPivotHTML(getBrandMonthlyPivot(state, { channel: '自社' }));
