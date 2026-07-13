@@ -93,8 +93,14 @@
     return rows;
   }
 
+  function collectPivotRecords(state) {
+    const monthlyMonths = new Set((state.monthlyRecords || []).map(r => r.yearMonth));
+    const dailyFallback = (state.dailyRecords || []).filter(r => !monthlyMonths.has(r.yearMonth));
+    return (state.baseRecords || []).concat(state.monthlyRecords || []).concat(dailyFallback);
+  }
+
   function getBrandMonthlyPivot(state, filter) {
-    let allRecords = (state.baseRecords || []).concat(state.monthlyRecords || []);
+    let allRecords = collectPivotRecords(state);
     if (filter && filter.channel) {
       allRecords = filterRecords(allRecords, { channel: filter.channel });
     }
@@ -134,7 +140,7 @@
   }
 
   function getChannelMonthlyPivot(state) {
-    const allRecords = (state.baseRecords || []).concat(state.monthlyRecords || []);
+    const allRecords = collectPivotRecords(state);
     const months = Array.from(new Set(allRecords.map(r => r.yearMonth))).sort();
 
     const rows = months.map(yearMonth => {

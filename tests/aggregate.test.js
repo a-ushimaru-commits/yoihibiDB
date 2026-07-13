@@ -226,3 +226,51 @@ test('getChannelMonthlyPivot returns empty months/rows but all 7 channels when b
   assert.deepEqual(pivot.rows, []);
   assert.deepEqual(pivot.channels, ['自社', 'アマゾン', '楽天', 'yahoo', '卸', 'TV', 'その他']);
 });
+
+function dailyFallbackState() {
+  return {
+    baseRecords: [],
+    monthlyRecords: [
+      // 2026-06 already has confirmed monthly data
+      { yearMonth: '2026-06', channel: '自社', type: '通常', brand: 'MCTオイル', sales: 1000, cost: 400, profit: 600 },
+    ],
+    dailyRecords: [
+      // 2026-06 also has daily records (same month as monthlyRecords) -- must NOT be double-counted
+      { yearMonth: '2026-06', date: '2026-06-01', channel: '自社', type: '通常', brand: 'MCTオイル', sales: 50, cost: 20, profit: 30 },
+      // 2026-07 has ONLY daily records (no monthly xlsx yet) -- must be used as an interim aggregate
+      { yearMonth: '2026-07', date: '2026-07-01', channel: 'アマゾン', type: '定期', brand: 'MSMパウダー', sales: 200, cost: 80, profit: 120 },
+      { yearMonth: '2026-07', date: '2026-07-02', channel: '自社', type: '通常', brand: 'MCTオイル', sales: 300, cost: 100, profit: 200 },
+    ],
+    targets: [],
+    mediaMapping: {},
+    productBrandMapping: {},
+  };
+}
+
+test('getBrandMonthlyPivot includes a daily-only month as an interim aggregate, but ignores daily records for a month that already has confirmed monthly data', () => {
+  const pivot = getBrandMonthlyPivot(dailyFallbackState());
+  assert.deepEqual(pivot.months, ['2026-06', '2026-07']);
+
+  const june = pivot.rows.find(r => r.yearMonth === '2026-06');
+  assert.equal(june.totalTsujoSales, 1000); // NOT 1050 -- the daily row for this month is ignored, monthly wins
+
+  const july = pivot.rows.find(r => r.yearMonth === '2026-07');
+  assert.equal(july.totalTeikiSales, 200);
+  assert.equal(july.totalTsujoSales, 300);
+  assert.deepEqual(july.byBrand['MSMパウダー'], { teikiSales: 200, teikiProfit: 120, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(july.byBrand['MCTオイル'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 300, tsujoProfit: 200 });
+});
+
+test('getChannelMonthlyPivot includes a daily-only month as an interim aggregate, but ignores daily records for a month that already has confirmed monthly data', () => {
+  const pivot = getChannelMonthlyPivot(dailyFallbackState());
+  assert.deepEqual(pivot.months, ['2026-06', '2026-07']);
+
+  const june = pivot.rows.find(r => r.yearMonth === '2026-06');
+  assert.equal(june.totalTsujoSales, 1000); // NOT 1050
+
+  const july = pivot.rows.find(r => r.yearMonth === '2026-07');
+  assert.equal(july.totalTeikiSales, 200);
+  assert.equal(july.totalTsujoSales, 300);
+  assert.deepEqual(july.byChannel['アマゾン'], { teikiSales: 200, teikiProfit: 120, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(july.byChannel['自社'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 300, tsujoProfit: 200 });
+});
