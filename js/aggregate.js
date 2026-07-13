@@ -42,17 +42,44 @@
     return (state.targets || []).find(t => t.yearMonth === yearMonth) || null;
   }
 
+  function previousMonth(yearMonth) {
+    const [y, m] = yearMonth.split('-').map(Number);
+    if (m === 1) return `${y - 1}-12`;
+    return `${y}-${String(m - 1).padStart(2, '0')}`;
+  }
+
+  function getElapsedDays(state, yearMonth) {
+    const totalDays = daysInMonth(yearMonth);
+    const hasMonthly = filterRecords(state.monthlyRecords || [], { yearMonth }).length > 0;
+    if (hasMonthly) return totalDays;
+    const daily = filterRecords(state.dailyRecords || [], { yearMonth });
+    if (daily.length === 0) return totalDays;
+    return Math.max(...daily.map(r => Number(r.date.slice(8, 10))));
+  }
+
   function monthlyOrDailyRecords(state, yearMonth) {
     const monthly = filterRecords(state.monthlyRecords || [], { yearMonth });
     if (monthly.length > 0) return monthly;
     return filterRecords(state.dailyRecords || [], { yearMonth });
   }
 
-  function getMonthlyComparison(state, yearMonth) {
-    const current = sumRecords(monthlyOrDailyRecords(state, yearMonth));
+  function getMonthlyComparison(state, yearMonth, options) {
+    const opts = options || {};
+    const extraFilter = opts.channel ? { channel: opts.channel } : {};
+    const targetsList = opts.targets || state.targets;
+
+    const current = sumRecords(filterRecords(monthlyOrDailyRecords(state, yearMonth), extraFilter));
     const baseMonth = shiftYearMonth(yearMonth, -1);
-    const base = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth }));
-    const target = findTarget(state, yearMonth);
+    const base = sumRecords(filterRecords(state.baseRecords, Object.assign({ yearMonth: baseMonth }, extraFilter)));
+    const prevMonth = previousMonth(yearMonth);
+    const prev = sumRecords(filterRecords(monthlyOrDailyRecords(state, prevMonth), extraFilter));
+
+    const target = (targetsList || []).find(t => t.yearMonth === yearMonth) || null;
+    const elapsedDays = getElapsedDays(state, yearMonth);
+    const totalDays = daysInMonth(yearMonth);
+    const proratedSalesTarget = target && target.salesTarget ? target.salesTarget * elapsedDays / totalDays : null;
+    const proratedProfitTarget = target && target.profitTarget ? target.profitTarget * elapsedDays / totalDays : null;
+
     return {
       yearMonth,
       sales: current.sales,
@@ -60,8 +87,12 @@
       profitRate: profitRate(current),
       salesYoY: pctChange(current.sales, base.sales),
       profitYoY: pctChange(current.profit, base.profit),
+      salesMoM: pctChange(current.sales, prev.sales),
+      profitMoM: pctChange(current.profit, prev.profit),
       salesTargetRate: target && target.salesTarget ? current.sales / target.salesTarget : null,
       profitTargetRate: target && target.profitTarget ? current.profit / target.profitTarget : null,
+      salesTargetRateProrated: proratedSalesTarget ? current.sales / proratedSalesTarget : null,
+      profitTargetRateProrated: proratedProfitTarget ? current.profit / proratedProfitTarget : null,
     };
   }
 
@@ -230,6 +261,6 @@
   return {
     CHANNELS, shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
     getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend,
-    getBrandMonthlyPivot, getChannelMonthlyPivot,
+    getBrandMonthlyPivot, getChannelMonthlyPivot, previousMonth, getElapsedDays,
   };
 });

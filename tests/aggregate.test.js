@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {
   shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
   getMonthlyComparison, getChannelTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandTable,
-  getBrandMonthlyPivot, getChannelMonthlyPivot,
+  getBrandMonthlyPivot, getChannelMonthlyPivot, previousMonth, getElapsedDays,
 } = require('../js/aggregate.js');
 
 test('shiftYearMonth moves the year and keeps the month', () => {
@@ -36,6 +36,33 @@ test('daysInMonth returns correct day counts including leap Feb', () => {
   assert.equal(daysInMonth('2026-02'), 28);
 });
 
+test('previousMonth moves back one month, rolling over the year at January', () => {
+  assert.equal(previousMonth('2026-07'), '2026-06');
+  assert.equal(previousMonth('2026-01'), '2025-12');
+});
+
+test('getElapsedDays returns the full month length when confirmed monthlyRecords exist for that month', () => {
+  const state = { monthlyRecords: [{ yearMonth: '2026-06', channel: 'TV', type: '通常', sales: 1, cost: 0, profit: 1 }], dailyRecords: [] };
+  assert.equal(getElapsedDays(state, '2026-06'), 30);
+});
+
+test('getElapsedDays returns the latest day present in dailyRecords when the month has no confirmed monthly data', () => {
+  const state = {
+    monthlyRecords: [],
+    dailyRecords: [
+      { yearMonth: '2026-07', date: '2026-07-05', channel: 'TV', type: '通常', sales: 1, cost: 0, profit: 1 },
+      { yearMonth: '2026-07', date: '2026-07-13', channel: 'TV', type: '通常', sales: 1, cost: 0, profit: 1 },
+      { yearMonth: '2026-07', date: '2026-07-09', channel: 'TV', type: '通常', sales: 1, cost: 0, profit: 1 },
+    ],
+  };
+  assert.equal(getElapsedDays(state, '2026-07'), 13);
+});
+
+test('getElapsedDays degrades to the full month length when there is no data at all for that month', () => {
+  const state = { monthlyRecords: [], dailyRecords: [] };
+  assert.equal(getElapsedDays(state, '2026-07'), 31);
+});
+
 function sampleState() {
   return {
     baseRecords: [
@@ -64,6 +91,41 @@ test('getMonthlyComparison compares 2期 month against 1期 same month one year 
   assert.equal(cmp.salesYoY, 0); // (3000-3000)/3000
   assert.equal(cmp.salesTargetRate, 1); // 3000/3000
   assert.equal(cmp.profitTargetRate, 1);
+});
+
+test('getMonthlyComparison also computes 前月比 (MoM) against the immediately preceding month', () => {
+  const state = sampleState();
+  state.monthlyRecords.push(
+    { yearMonth: '2026-05', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 1000, cost: 400, profit: 600 },
+  );
+  const cmp = getMonthlyComparison(state, '2026-06');
+  assert.equal(cmp.salesMoM, 2); // (3000-1000)/1000
+});
+
+test('getMonthlyComparison prorates the target by elapsed days when the month has no confirmed monthly data yet', () => {
+  const state = {
+    baseRecords: [],
+    monthlyRecords: [],
+    dailyRecords: [
+      { yearMonth: '2026-07', date: '2026-07-01', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 500, cost: 200, profit: 300 },
+      { yearMonth: '2026-07', date: '2026-07-10', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 500, cost: 200, profit: 300 },
+    ],
+    targets: [{ yearMonth: '2026-07', salesTarget: 3100, profitTarget: 1240 }], // full-month target: 100/day sales, 40/day profit
+    mediaMapping: {}, productBrandMapping: {},
+  };
+  const cmp = getMonthlyComparison(state, '2026-07');
+  // elapsed days = 10 (latest day in dailyRecords); prorated sales target = 3100 * 10/31 ≈ 1000
+  assert.equal(cmp.sales, 1000);
+  assert.equal(cmp.salesTargetRateProrated, 1); // 1000 / (3100*10/31)
+  assert.ok(cmp.salesTargetRate < 1); // full-month target rate is much lower than the prorated one
+});
+
+test('getMonthlyComparison restricts to a channel and uses an override targets array when given options', () => {
+  const state = sampleState();
+  const cmp = getMonthlyComparison(state, '2026-06', { channel: '自社', targets: [{ yearMonth: '2026-06', salesTarget: 1800, profitTarget: 1080 }] });
+  assert.equal(cmp.sales, 1800); // only the 自社/MSMパウダー row, not TV's
+  assert.equal(cmp.profit, 1080);
+  assert.equal(cmp.salesTargetRate, 1); // uses the override targets array, not state.targets (which would give 1800/3000)
 });
 
 test('getChannelTable returns all 7 channels with sales/profit/profitRate/salesYoY, no target column', () => {
