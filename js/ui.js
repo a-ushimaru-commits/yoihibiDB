@@ -20,13 +20,15 @@
         <div class="kpi-label">売上</div>
         <div class="kpi-value">${formatYen(c.sales)}</div>
         <div class="kpi-sub">1期比 ${formatPct(c.salesYoY)} ／ 前月比 ${formatPct(c.salesMoM)}</div>
-        <div class="kpi-sub">目標達成率（全体） ${formatPct(c.salesTargetRate)} ／ 目標達成率（日割） ${formatPct(c.salesTargetRateProrated)}</div>
+        <div class="kpi-sub">目標達成率（全体） ${formatPct(c.salesTargetRate)}</div>
+        <div class="kpi-sub">目標達成率（日割） ${formatPct(c.salesTargetRateProrated)}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">粗利</div>
         <div class="kpi-value">${formatYen(c.profit)}</div>
         <div class="kpi-sub">1期比 ${formatPct(c.profitYoY)} ／ 前月比 ${formatPct(c.profitMoM)}</div>
-        <div class="kpi-sub">目標達成率（全体） ${formatPct(c.profitTargetRate)} ／ 目標達成率（日割） ${formatPct(c.profitTargetRateProrated)}</div>
+        <div class="kpi-sub">目標達成率（全体） ${formatPct(c.profitTargetRate)}</div>
+        <div class="kpi-sub">目標達成率（日割） ${formatPct(c.profitTargetRateProrated)}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">粗利率</div>
