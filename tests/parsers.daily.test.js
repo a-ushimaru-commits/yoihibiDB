@@ -86,3 +86,35 @@ test('parseDailyCsv decides 定期/通常 from 商品名 (containing "定期"), 
   assert.equal(teiki.sales, 1000); // only the 【定期】-named row
   assert.equal(tsujo.sales, 500 + 200); // the other two, despite one saying 販売区分='定期'
 });
+
+function buildDailyCsvWithJan() {
+  const header = '出荷日,媒体名,商品コード,商品名,金額,仕入金額,粗利額,JANコード,構成数,数量';
+  const lines = [
+    header,
+    // 仕入金額 here is a placeholder (2 yen) -- far below the real per-unit cost of 2210 yen
+    '26/07/01,よい日々,FH0001010101000,ｵｰｶﾞﾆｯｸ ｳﾄﾞｽﾞｵｲﾙ/500ml,5880,2,5878,0061998079829,1,1',
+    // this JAN has no entry in janUnitCosts -- must fall back to the CSV's own (placeholder) values.
+    // Uses a different media (-> different channel) so it doesn't aggregate into the same row as above.
+    '26/07/01,Amazon,FH0002020202000,謎の商品/500ml,1000,3,997,9999999999999,1,1',
+  ];
+  return lines.join('\n') + '\n';
+}
+
+test('parseDailyCsv overrides cost/profit with janUnitCosts (per JAN unit cost x 構成数 x 数量) when a JAN match exists, falling back to the CSV\'s own values otherwise', () => {
+  const janUnitCosts = { '0061998079829': 2210 };
+  const { records } = parseDailyCsv(buildDailyCsvWithJan(), undefined, undefined, janUnitCosts);
+
+  const matched = records.find(r => r.sales === 5880);
+  assert.equal(matched.cost, 2210); // 2210 * (1 * 1), NOT the CSV's placeholder cost of 2
+  assert.equal(matched.profit, 5880 - 2210);
+
+  const unmatched = records.find(r => r.sales === 1000);
+  assert.equal(unmatched.cost, 3); // no JAN match -> falls back to the CSV's own 仕入金額
+  assert.equal(unmatched.profit, 997);
+});
+
+test('parseDailyCsv behaves identically when janUnitCosts is omitted (backward compatible)', () => {
+  const withoutArg = parseDailyCsv(buildDailyCsvWithJan());
+  const withEmptyArg = parseDailyCsv(buildDailyCsvWithJan(), undefined, undefined, {});
+  assert.deepEqual(withoutArg, withEmptyArg);
+});

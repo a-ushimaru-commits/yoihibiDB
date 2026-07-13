@@ -292,7 +292,7 @@
     return rows.filter(r => !(r.length === 1 && r[0] === ''));
   }
 
-  function parseDailyCsv(csvText, mediaMapping, productBrandMapping) {
+  function parseDailyCsv(csvText, mediaMapping, productBrandMapping, janUnitCosts) {
     const rows = parseCsv(csvText);
     const required = ['出荷日', '媒体名', '商品コード', '商品名'];
     const headerIdx = findHeaderRowIndex(rows, required);
@@ -305,7 +305,9 @@
       shipDate: col('出荷日'), media: col('媒体名'), productCode: col('商品コード'),
       productName: col('商品名'),
       sales: col('金額'), cost: col('仕入金額'), profit: col('粗利額'),
+      jan: col('JANコード'), packCount: col('構成数'), qty: col('数量'),
     };
+    const janCosts = janUnitCosts || {};
 
     const mapping = mappingLib;
     const brandMap = productBrandMapping || {};
@@ -323,8 +325,15 @@
 
       const mapped = mapping.mapMediaToChannel(row[idx.media], mediaMapping);
       const sales = Number(row[idx.sales]) || 0;
-      const cost = Number(row[idx.cost]) || 0;
-      const profit = Number(row[idx.profit]) || 0;
+      let cost = Number(row[idx.cost]) || 0;
+      let profit = Number(row[idx.profit]) || 0;
+
+      const jan = idx.jan === -1 || row[idx.jan] == null ? '' : String(row[idx.jan]).trim();
+      const units = (Number(row[idx.packCount]) || 0) * (Number(row[idx.qty]) || 0);
+      if (jan && units && Object.prototype.hasOwnProperty.call(janCosts, jan)) {
+        cost = janCosts[jan] * units;
+        profit = sales - cost;
+      }
 
       if (!mapped.mapped) {
         const rawName = (row[idx.media] == null ? '' : String(row[idx.media])).trim();
