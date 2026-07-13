@@ -126,7 +126,9 @@
 
   function refreshMonthOptions() {
     const state = store.getState();
-    const months = Array.from(new Set(state.monthlyRecords.map(r => r.yearMonth))).sort();
+    const months = Array.from(new Set(
+      state.monthlyRecords.map(r => r.yearMonth).concat(state.dailyRecords.map(r => r.yearMonth))
+    )).sort();
     const select = el('monthSelect');
     const current = select.value;
     select.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
