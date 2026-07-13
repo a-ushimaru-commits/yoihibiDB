@@ -6,13 +6,7 @@
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<div class="header-row">
-  <h1>よい日々 売上進捗ダッシュボード</h1>
-  <div id="dropzone" class="dropzone">
-    ここに1期実績xlsx／月次実績xlsx／日次売上csv／商品コード→ブランド対応表xlsxをドラッグ&ドロップ、または
-    <input type="file" id="fileInput" multiple accept=".xlsx,.csv">
-  </div>
-</div>
+<h1>よい日々 売上進捗ダッシュボード</h1>
 <p id="status"></p>
 <div id="warnings"></div>
 <div id="brandWarnings"></div>
@@ -22,7 +16,13 @@
   <select id="monthSelect"></select>
 </div>
 
-<div id="kpiRow" class="kpi-row"></div>
+<div class="kpi-row-with-upload">
+  <div id="kpiRow" class="kpi-row"></div>
+  <div id="dropzone" class="dropzone">
+    ここに1期実績xlsx／月次実績xlsx／日次売上csv／商品コード→ブランド対応表xlsxをドラッグ&ドロップ、または
+    <input type="file" id="fileInput" multiple accept=".xlsx,.csv">
+  </div>
+</div>
 
 <h2>自社 KPI</h2>
 <div id="ownChannelKpiRow" class="kpi-row"></div>
