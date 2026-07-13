@@ -25,6 +25,23 @@ test('renderKpiCardsHTML includes sales, profit, profitRate and both comparison 
   assert.match(html, /80\.0%/);
 });
 
+test('renderKpiCardsHTML also shows 前月比 (MoM) and 目標達成率(日割), labeling 目標達成率(全体) distinctly', () => {
+  const html = renderKpiCardsHTML({
+    sales: 3000000, profit: 1200000, profitRate: 0.4,
+    salesYoY: 0.1, profitYoY: 0.05,
+    salesMoM: 0.2, profitMoM: 0.15,
+    salesTargetRate: 0.8, profitTargetRate: 0.75,
+    salesTargetRateProrated: 1.1, profitTargetRateProrated: 1.05,
+  });
+  assert.match(html, /前月比/);
+  assert.match(html, /20\.0%/); // salesMoM
+  assert.match(html, /15\.0%/); // profitMoM
+  assert.match(html, /目標達成率（全体）/);
+  assert.match(html, /目標達成率（日割）/);
+  assert.match(html, /110\.0%/); // salesTargetRateProrated
+  assert.match(html, /105\.0%/); // profitTargetRateProrated
+});
+
 test('renderChannelTableHTML emits one row per channel with sales/profit/profitRate/salesYoY', () => {
   const html = renderChannelTableHTML([
     { channel: 'TV', sales: 1000, profit: 400, profitRate: 0.4, salesYoY: 0.2 },
