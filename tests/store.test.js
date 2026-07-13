@@ -10,7 +10,7 @@ function fakeBackend() {
 test('getState returns empty structure when nothing stored', () => {
   const store = createStore(fakeBackend());
   const state = store.getState();
-  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], mediaMapping: {}, productBrandMapping: {} });
+  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], mediaMapping: {}, productBrandMapping: {}, janUnitCosts: {} });
 });
 
 test('setBaseRecords persists and getState reflects it', () => {
@@ -50,6 +50,14 @@ test('setTargets, setMediaMapping, and setProductBrandMapping replace their sect
   assert.equal(state.targets[0].salesTarget, 1000000);
   assert.equal(state.mediaMapping['新媒体'], 'TV');
   assert.equal(state.productBrandMapping['FH0009999999999'], 'MCTオイル');
+});
+
+test('upsertJanUnitCosts merges in new JAN unit costs, letting newer values overwrite matching JANs while keeping others', () => {
+  const store = createStore(fakeBackend());
+  store.upsertJanUnitCosts({ '0061998079829': 2210, '1111111111111': 500 });
+  store.upsertJanUnitCosts({ '0061998079829': 2300 }); // updated cost for the same JAN from a newer monthly file
+  const { janUnitCosts } = store.getState();
+  assert.deepEqual(janUnitCosts, { '0061998079829': 2300, '1111111111111': 500 });
 });
 
 test('exportJSON/importJSON round-trip', () => {
