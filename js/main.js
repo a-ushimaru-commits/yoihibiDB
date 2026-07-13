@@ -1,8 +1,8 @@
 (function () {
   const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, parseTargetsWorkbook, detectFileType, guessBrandForProductCode } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
-  const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot, getChannelMonthlyPivot } = window.YoiHibi;
-  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML } = window.YoiHibi;
+  const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot, getChannelMonthlyPivot, getOwnChannelMonthlySummary } = window.YoiHibi;
+  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML } = window.YoiHibi;
 
   const store = createStore(window.localStorage);
   let trendChart = null;
@@ -158,6 +158,7 @@
     el('channelTable').innerHTML = renderChannelTableHTML(getChannelTable(state, yearMonth));
     el('brandTable').innerHTML = renderBrandTableHTML(getBrandTable(state, yearMonth));
     el('ownChannelBrandMonthlyPivot').innerHTML = renderBrandMonthlyPivotHTML(getBrandMonthlyPivot(state, { channel: '自社' }));
+    el('ownChannelMonthlySummary').innerHTML = renderOwnChannelMonthlySummaryHTML(getOwnChannelMonthlySummary(state));
     el('brandMonthlyPivot').innerHTML = renderBrandMonthlyPivotHTML(getBrandMonthlyPivot(state));
     el('channelMonthlyPivot').innerHTML = renderChannelMonthlyPivotHTML(getChannelMonthlyPivot(state));
 
