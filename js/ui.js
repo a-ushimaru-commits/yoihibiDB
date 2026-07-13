@@ -127,8 +127,10 @@
   function heatmapColor(value, maxAbs, type) {
     if (!maxAbs || value === 0) return '';
     const ratio = Math.min(Math.abs(value) / maxAbs, 1);
-    const lightness = Math.round(92 - ratio * 42);
     const hue = value < 0 ? 0 : (type === 'teiki' ? 218 : 140);
+    // 青は同じ明度でも緑より暗く見えやすく黒文字が読みにくくなるため、暗くなる幅を抑える
+    const darkenRange = hue === 218 ? 20 : 42;
+    const lightness = Math.round(92 - ratio * darkenRange);
     return `background-color: hsl(${hue}, 65%, ${lightness}%);`;
   }
 

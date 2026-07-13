@@ -153,9 +153,17 @@ test('heatmapColor returns no color for a zero value or a zero column max, and a
 });
 
 test('heatmapColor uses a blue hue for positive 定期 cells (matching 自社月別サマリーの定期=薄青) and keeps 通常/negative unchanged', () => {
-  assert.equal(heatmapColor(100, 100, 'teiki'), 'background-color: hsl(218, 65%, 50%);'); // positive teiki -> blue
+  assert.equal(heatmapColor(100, 100, 'teiki'), 'background-color: hsl(218, 65%, 72%);'); // positive teiki -> blue, capped lighter so text stays readable
   assert.equal(heatmapColor(100, 100, 'tsujo'), 'background-color: hsl(140, 65%, 50%);'); // positive tsujo -> green, unchanged
   assert.equal(heatmapColor(-100, 100, 'teiki'), 'background-color: hsl(0, 65%, 50%);'); // negative teiki still -> red
+});
+
+test('heatmapColor keeps blue (定期) noticeably lighter than green/red at the same intensity, since blue reads darker at equal HSL lightness', () => {
+  const teikiFull = heatmapColor(100, 100, 'teiki');
+  const tsujoFull = heatmapColor(100, 100, 'tsujo');
+  const teikiLightness = Number(teikiFull.match(/(\d+)%\);$/)[1]);
+  const tsujoLightness = Number(tsujoFull.match(/(\d+)%\);$/)[1]);
+  assert.ok(teikiLightness > tsujoLightness, `expected blue lightness (${teikiLightness}) to stay lighter than green lightness (${tsujoLightness}) at full intensity`);
 });
 
 function samplePivot() {
