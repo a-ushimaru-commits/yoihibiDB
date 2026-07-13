@@ -4,6 +4,7 @@ const {
   shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
   getMonthlyComparison, getChannelTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandTable,
   getBrandMonthlyPivot, getChannelMonthlyPivot, previousMonth, getElapsedDays,
+  getOwnChannelMonthlySummary,
 } = require('../js/aggregate.js');
 
 test('shiftYearMonth moves the year and keeps the month', () => {
@@ -394,4 +395,69 @@ test('getChannelMonthlyPivot includes a daily-only month as an interim aggregate
   assert.equal(july.totalTsujoSales, 300);
   assert.deepEqual(july.byChannel['アマゾン'], { teikiSales: 200, teikiProfit: 120, tsujoSales: 0, tsujoProfit: 0 });
   assert.deepEqual(july.byChannel['自社'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 300, tsujoProfit: 200 });
+});
+
+function ownChannelSummaryState() {
+  return {
+    baseRecords: [
+      { yearMonth: '2025-06', channel: '自社', type: '定期', brand: 'BrandA', qty: 10, sales: 1000, cost: 400, profit: 600 },
+      { yearMonth: '2025-06', channel: '自社', type: '通常', brand: 'BrandA', qty: 5, sales: 500, cost: 200, profit: 300 },
+    ],
+    monthlyRecords: [
+      { yearMonth: '2026-01', channel: '自社', type: '定期', brand: 'BrandA', qty: 2, sales: 200, cost: 80, profit: 120 },
+      { yearMonth: '2026-06', channel: '自社', type: '定期', brand: 'BrandA', qty: 12, sales: 1200, cost: 480, profit: 720 },
+      { yearMonth: '2026-06', channel: '自社', type: '通常', brand: 'BrandA', qty: 6, sales: 600, cost: 240, profit: 360 },
+      { yearMonth: '2026-06', channel: '自社', type: '通常', brand: 'BrandB', qty: 1, sales: 100, cost: 40, profit: 60 },
+      { yearMonth: '2026-06', channel: 'TV', type: '定期', brand: 'BrandA', qty: 999, sales: 99999, cost: 1, profit: 99998 }, // different channel, must be excluded
+    ],
+    dailyRecords: [],
+    targets: [],
+    ownChannelTargets: [],
+    mediaMapping: {},
+    productBrandMapping: {},
+  };
+}
+
+test('getOwnChannelMonthlySummary restricts to 自社 channel and combines all brands into teiki/tsujo/total for the month', () => {
+  const summary = getOwnChannelMonthlySummary(ownChannelSummaryState());
+  assert.ok(summary.months.includes('2026-06'));
+  assert.deepEqual(summary.brands, ['BrandA', 'BrandB']); // BrandA total sales (3500) > BrandB (100)
+
+  const row = summary.rows.find(r => r.yearMonth === '2026-06');
+  assert.deepEqual(row.teiki, { qty: 12, sales: 1200, profit: 720, profitRate: 0.6 });
+  assert.deepEqual(row.tsujo, { qty: 7, sales: 700, profit: 420, profitRate: 0.6 }); // BrandA(600)+BrandB(100)
+  assert.deepEqual(row.total, { qty: 19, sales: 1900, profit: 1140, profitRate: 0.6 });
+});
+
+test('getOwnChannelMonthlySummary computes 昨対比 (yoy) against the same month one year earlier, with profitRate as a point difference', () => {
+  const summary = getOwnChannelMonthlySummary(ownChannelSummaryState());
+  const row = summary.rows.find(r => r.yearMonth === '2026-06');
+  assert.equal(row.yoy.teiki.qtyPct, 0.2); // (12-10)/10
+  assert.equal(row.yoy.teiki.salesPct, 0.2);
+  assert.equal(row.yoy.teiki.profitPct, 0.2);
+  assert.equal(row.yoy.teiki.profitRatePtDiff, 0); // 0.6 - 0.6
+  assert.ok(Math.abs(row.yoy.tsujo.qtyPct - 0.4) < 1e-9); // (7-5)/5
+  assert.ok(Math.abs(row.yoy.total.salesPct - (400 / 1500)) < 1e-9); // (1900-1500)/1500
+});
+
+test('getOwnChannelMonthlySummary computes 年計対比 (trailing-12-month total vs the prior 12-month window)', () => {
+  const summary = getOwnChannelMonthlySummary(ownChannelSummaryState());
+  const row = summary.rows.find(r => r.yearMonth === '2026-06');
+  // ttm ending 2026-06 includes both 2026-06 (qty12) and 2026-01 (qty2) -> 14; ttm ending 2025-06 only has 2025-06 (qty10)
+  assert.equal(row.ttmYoy.teiki.qtyPct, 0.4); // (14-10)/10 -- differs from the plain yoy (0.2), proving the 12-month window is used
+  assert.equal(row.ttmYoy.teiki.salesPct, 0.4);
+  assert.equal(row.ttmYoy.teiki.profitPct, 0.4);
+});
+
+test('getOwnChannelMonthlySummary splits byBrand with the same teiki/tsujo/total/yoy/ttmYoy shape as the 自社-wide totals', () => {
+  const summary = getOwnChannelMonthlySummary(ownChannelSummaryState());
+  const row = summary.rows.find(r => r.yearMonth === '2026-06');
+  assert.deepEqual(row.byBrand['BrandA'].total, { qty: 18, sales: 1800, profit: 1080, profitRate: 0.6 });
+  assert.deepEqual(row.byBrand['BrandB'].teiki, { qty: 0, sales: 0, profit: 0, profitRate: 0 });
+  assert.deepEqual(row.byBrand['BrandB'].tsujo, { qty: 1, sales: 100, profit: 60, profitRate: 0.6 });
+});
+
+test('getOwnChannelMonthlySummary returns empty months/brands/rows when there is no 自社 data at all', () => {
+  const summary = getOwnChannelMonthlySummary({ baseRecords: [], monthlyRecords: [] });
+  assert.deepEqual(summary, { months: [], brands: [], rows: [] });
 });

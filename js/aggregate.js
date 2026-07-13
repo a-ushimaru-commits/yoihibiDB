@@ -207,6 +207,101 @@
     return { months, channels: CHANNELS, rows };
   }
 
+  function ttmTotals(state, endYearMonth, extraFilter) {
+    const months = [];
+    let ym = endYearMonth;
+    for (let i = 0; i < 12; i++) {
+      months.push(ym);
+      ym = previousMonth(ym);
+    }
+    const records = filterRecords(collectPivotRecords(state), extraFilter || {});
+    return sumRecords(records.filter(r => months.includes(r.yearMonth)));
+  }
+
+  function yoyMetrics(current, base) {
+    return {
+      qtyPct: pctChange(current.qty, base.qty),
+      salesPct: pctChange(current.sales, base.sales),
+      profitPct: pctChange(current.profit, base.profit),
+      profitRatePtDiff: base.sales === 0 ? (current.sales === 0 ? 0 : null) : (current.profitRate - base.profitRate),
+    };
+  }
+
+  function getOwnChannelMonthlySummary(state) {
+    const allSelfRecords = filterRecords(collectPivotRecords(state), { channel: '自社' });
+    const months = Array.from(new Set(allSelfRecords.map(r => r.yearMonth))).sort();
+
+    const brandSales = new Map();
+    allSelfRecords.forEach(r => {
+      if (r.brand == null) return;
+      brandSales.set(r.brand, (brandSales.get(r.brand) || 0) + r.sales);
+    });
+    const brands = Array.from(brandSales.keys()).sort((a, b) => brandSales.get(b) - brandSales.get(a));
+
+    function withRate(totals) {
+      return { qty: totals.qty, sales: totals.sales, profit: totals.profit, profitRate: profitRate(totals) };
+    }
+
+    function typeSplitFor(yearMonth, extraFilter) {
+      const records = filterRecords(allSelfRecords, Object.assign({ yearMonth }, extraFilter || {}));
+      return {
+        teiki: withRate(sumRecords(filterRecords(records, { type: '定期' }))),
+        tsujo: withRate(sumRecords(filterRecords(records, { type: '通常' }))),
+        total: withRate(sumRecords(records)),
+      };
+    }
+
+    function yoyFor(current, base) {
+      return {
+        teiki: yoyMetrics(current.teiki, base.teiki),
+        tsujo: yoyMetrics(current.tsujo, base.tsujo),
+        total: yoyMetrics(current.total, base.total),
+      };
+    }
+
+    function ttmSplitFor(endYearMonth, extraFilter) {
+      return {
+        teiki: withRate(ttmTotals(state, endYearMonth, Object.assign({ channel: '自社', type: '定期' }, extraFilter || {}))),
+        tsujo: withRate(ttmTotals(state, endYearMonth, Object.assign({ channel: '自社', type: '通常' }, extraFilter || {}))),
+        total: withRate(ttmTotals(state, endYearMonth, Object.assign({ channel: '自社' }, extraFilter || {}))),
+      };
+    }
+
+    const rows = months.map(yearMonth => {
+      const baseMonth = shiftYearMonth(yearMonth, -1);
+      const current = typeSplitFor(yearMonth);
+      const base = typeSplitFor(baseMonth);
+      const yoy = yoyFor(current, base);
+
+      const ttmCurrent = ttmSplitFor(yearMonth);
+      const ttmBase = ttmSplitFor(baseMonth);
+      const ttmYoy = yoyFor(ttmCurrent, ttmBase);
+
+      const byBrand = {};
+      brands.forEach(brand => {
+        const brandCurrent = typeSplitFor(yearMonth, { brand });
+        const brandBase = typeSplitFor(baseMonth, { brand });
+        const brandYoy = yoyFor(brandCurrent, brandBase);
+        const brandTtmCurrent = ttmSplitFor(yearMonth, { brand });
+        const brandTtmBase = ttmSplitFor(baseMonth, { brand });
+        const brandTtmYoy = yoyFor(brandTtmCurrent, brandTtmBase);
+        byBrand[brand] = {
+          teiki: brandCurrent.teiki, tsujo: brandCurrent.tsujo, total: brandCurrent.total,
+          yoy: brandYoy, ttmYoy: brandTtmYoy,
+        };
+      });
+
+      return {
+        yearMonth,
+        teiki: current.teiki, tsujo: current.tsujo, total: current.total,
+        yoy, ttmYoy,
+        byBrand,
+      };
+    });
+
+    return { months, brands, rows };
+  }
+
   function getDailyCumulativeSeries(state, yearMonth) {
     const daily = filterRecords(state.dailyRecords, { yearMonth });
     const nDays = daysInMonth(yearMonth);
@@ -262,5 +357,6 @@
     CHANNELS, shiftYearMonth, sumRecords, filterRecords, profitRate, pctChange, daysInMonth,
     getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend,
     getBrandMonthlyPivot, getChannelMonthlyPivot, previousMonth, getElapsedDays,
+    getOwnChannelMonthlySummary,
   };
 });
