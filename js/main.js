@@ -193,8 +193,16 @@
     const zone = el('dropzone');
     ['dragenter', 'dragover'].forEach(evt => zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.add('dragover'); }));
     ['dragleave', 'drop'].forEach(evt => zone.addEventListener(evt, e => { e.preventDefault(); zone.classList.remove('dragover'); }));
-    zone.addEventListener('drop', e => { Array.from(e.dataTransfer.files).forEach(handleFile); });
-    el('fileInput').addEventListener('change', e => { Array.from(e.target.files).forEach(handleFile); });
+    zone.addEventListener('drop', async e => { await handleFiles(Array.from(e.dataTransfer.files)); });
+    el('fileInput').addEventListener('change', async e => { await handleFiles(Array.from(e.target.files)); });
+  }
+
+  async function handleFiles(files) {
+    // Processed one at a time (not in parallel) so that, e.g., a monthly file's janUnitCosts
+    // are saved before a daily file selected alongside it is parsed and can use them.
+    for (const file of files) {
+      await handleFile(file);
+    }
   }
 
   function setupSettingsPanel() {
