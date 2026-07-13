@@ -166,17 +166,27 @@
     renderDailyChart(getDailyCumulativeSeries(state, yearMonth));
   }
 
+  const QTY_AXIS_OPTIONS = {
+    responsive: true,
+    scales: {
+      y: { type: 'linear', position: 'left' },
+      qty: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } },
+    },
+  };
+
   function renderTrendChart(trend) {
     const ctx = el('trendChart').getContext('2d');
     const data = {
       labels: trend.map(t => t.yearMonth),
       datasets: [
-        { label: '2期 売上', data: trend.map(t => t.currentSales), borderColor: '#1a73e8', fill: false },
-        { label: '1期 売上', data: trend.map(t => t.baseSales), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false },
+        { label: '2期 売上', data: trend.map(t => t.currentSales), borderColor: '#1a73e8', fill: false, yAxisID: 'y' },
+        { label: '1期 売上', data: trend.map(t => t.baseSales), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'y' },
+        { label: '定期数', data: trend.map(t => t.teikiQty), borderColor: '#188038', fill: false, yAxisID: 'qty' },
+        { label: '通常数', data: trend.map(t => t.tsujoQty), borderColor: '#f9ab00', fill: false, yAxisID: 'qty' },
       ],
     };
-    if (trendChart) { trendChart.data = data; trendChart.update(); return; }
-    trendChart = new Chart(ctx, { type: 'line', data, options: { responsive: true } });
+    if (trendChart) { trendChart.data = data; trendChart.options = QTY_AXIS_OPTIONS; trendChart.update(); return; }
+    trendChart = new Chart(ctx, { type: 'line', data, options: QTY_AXIS_OPTIONS });
   }
 
   function renderDailyChart(series) {
@@ -184,12 +194,14 @@
     const data = {
       labels: series.map(s => s.day),
       datasets: [
-        { label: '当月累積売上', data: series.map(s => s.actualSales), borderColor: '#1a73e8', fill: false },
-        { label: '1期同月ペース', data: series.map(s => s.paceSales), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false },
+        { label: '当月累積売上', data: series.map(s => s.actualSales), borderColor: '#1a73e8', fill: false, yAxisID: 'y' },
+        { label: '1期同月ペース', data: series.map(s => s.paceSales), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'y' },
+        { label: '定期数（累積）', data: series.map(s => s.actualTeikiQty), borderColor: '#188038', fill: false, yAxisID: 'qty' },
+        { label: '通常数（累積）', data: series.map(s => s.actualTsujoQty), borderColor: '#f9ab00', fill: false, yAxisID: 'qty' },
       ],
     };
-    if (dailyChart) { dailyChart.data = data; dailyChart.update(); return; }
-    dailyChart = new Chart(ctx, { type: 'line', data, options: { responsive: true } });
+    if (dailyChart) { dailyChart.data = data; dailyChart.options = QTY_AXIS_OPTIONS; dailyChart.update(); return; }
+    dailyChart = new Chart(ctx, { type: 'line', data, options: QTY_AXIS_OPTIONS });
   }
 
   function setupDropzone() {
