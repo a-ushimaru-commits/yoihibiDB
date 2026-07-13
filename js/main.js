@@ -54,15 +54,16 @@
         store.setTargets(merged);
         showStatus(`年間目標を取込みました（${parsedTargets.length}ヶ月分）`);
       } else if (type === 'monthly') {
-        const { records, unmappedMedia, unmappedProducts } = parseMonthlyWorkbook(workbook, store.getState().mediaMapping, store.getState().productBrandMapping);
+        const { records, unmappedMedia, unmappedProducts, janUnitCosts } = parseMonthlyWorkbook(workbook, store.getState().mediaMapping, store.getState().productBrandMapping);
         const months = Array.from(new Set(records.map(r => r.yearMonth)));
         months.forEach(ym => store.upsertMonthlyRecords(ym, records.filter(r => r.yearMonth === ym)));
+        store.upsertJanUnitCosts(janUnitCosts);
         showStatus(`月次実績を取込みました（${records.length}件）`);
         showWarnings(unmappedMedia);
         showBrandWarnings(unmappedProducts);
       } else if (type === 'daily') {
         const text = decodeShiftJis(buffer);
-        const { records, unmappedMedia, unmappedProducts } = parseDailyCsv(text, store.getState().mediaMapping, store.getState().productBrandMapping);
+        const { records, unmappedMedia, unmappedProducts } = parseDailyCsv(text, store.getState().mediaMapping, store.getState().productBrandMapping, store.getState().janUnitCosts);
         const months = Array.from(new Set(records.map(r => r.yearMonth)));
         months.forEach(ym => store.upsertDailyRecords(ym, records.filter(r => r.yearMonth === ym)));
         showStatus(`日次売上を取込みました（${records.length}件）`);
