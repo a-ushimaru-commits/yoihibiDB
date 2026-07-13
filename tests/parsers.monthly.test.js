@@ -168,6 +168,13 @@ test('parseMonthlyWorkbook returns an empty janUnitCosts when the file has no JA
   assert.deepEqual(janUnitCosts, {});
 });
 
+test('parseMonthlyWorkbook sums 数量 into each aggregated record\'s qty field', () => {
+  const { records } = parseMonthlyWorkbook(buildMonthlyWorkbookWithJan());
+  // all four rows share the same yearMonth/channel(自社)/type(通常)/brand(未分類), so they merge into one record
+  const rec = records.find(r => r.channel === '自社' && r.type === '通常');
+  assert.equal(rec.qty, 4 + 1 + 3 + 0);
+});
+
 test('parseMonthlyWorkbook throws a clear error when 売上明細_提出 sheet is missing', () => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['x']]), 'Sheet1');

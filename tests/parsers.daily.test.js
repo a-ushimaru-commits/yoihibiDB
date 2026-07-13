@@ -118,3 +118,9 @@ test('parseDailyCsv behaves identically when janUnitCosts is omitted (backward c
   const withEmptyArg = parseDailyCsv(buildDailyCsvWithJan(), undefined, undefined, {});
   assert.deepEqual(withoutArg, withEmptyArg);
 });
+
+test('parseDailyCsv sums 数量 into each aggregated record\'s qty field', () => {
+  const { records } = parseDailyCsv(buildDailyCsvWithJan());
+  const matched = records.find(r => r.sales === 5880);
+  assert.equal(matched.qty, 1);
+});

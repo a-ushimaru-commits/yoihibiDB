@@ -43,6 +43,7 @@
       channel: col('販売区分'),
       brand: col('よい日々'),
       type: col('定期/通常'),
+      qty: col('数量'),
       sales: col('売上'),
       cost: col('仕入額'),
       profit: col('粗利'),
@@ -61,9 +62,10 @@
       const brand = (brandCell == null || String(brandCell).trim() === '') ? null : String(brandCell).trim();
       const key = `${yearMonth}|${channel}|${type}|${brand}`;
       if (!agg.has(key)) {
-        agg.set(key, { yearMonth: String(yearMonth), channel: String(channel), type: String(type), brand, sales: 0, cost: 0, profit: 0 });
+        agg.set(key, { yearMonth: String(yearMonth), channel: String(channel), type: String(type), brand, qty: 0, sales: 0, cost: 0, profit: 0 });
       }
       const rec = agg.get(key);
+      rec.qty += Number(row[idx.qty]) || 0;
       rec.sales += Number(row[idx.sales]) || 0;
       rec.cost += Number(row[idx.cost]) || 0;
       rec.profit += Number(row[idx.profit]) || 0;
@@ -249,9 +251,10 @@
 
       const key = `${parsedDate.yearMonth}|${mapped.channel}|${type}|${brand}`;
       if (!agg.has(key)) {
-        agg.set(key, { yearMonth: parsedDate.yearMonth, channel: mapped.channel, type: String(type), brand, sales: 0, cost: 0, profit: 0 });
+        agg.set(key, { yearMonth: parsedDate.yearMonth, channel: mapped.channel, type: String(type), brand, qty: 0, sales: 0, cost: 0, profit: 0 });
       }
       const rec = agg.get(key);
+      rec.qty += Number(row[idx.qty]) || 0;
       rec.sales += sales;
       rec.cost += cost;
       rec.profit += profit;
@@ -359,9 +362,10 @@
 
       const key = `${parsedDate.date}|${mapped.channel}|${type}|${brand}`;
       if (!agg.has(key)) {
-        agg.set(key, { yearMonth: parsedDate.yearMonth, date: parsedDate.date, channel: mapped.channel, type: String(type), brand, sales: 0, cost: 0, profit: 0 });
+        agg.set(key, { yearMonth: parsedDate.yearMonth, date: parsedDate.date, channel: mapped.channel, type: String(type), brand, qty: 0, sales: 0, cost: 0, profit: 0 });
       }
       const rec = agg.get(key);
+      rec.qty += Number(row[idx.qty]) || 0;
       rec.sales += sales;
       rec.cost += cost;
       rec.profit += profit;

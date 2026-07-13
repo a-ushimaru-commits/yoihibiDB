@@ -14,9 +14,9 @@
 
   function sumRecords(records) {
     return records.reduce((acc, r) => {
-      acc.sales += r.sales; acc.cost += r.cost; acc.profit += r.profit;
+      acc.qty += r.qty || 0; acc.sales += r.sales; acc.cost += r.cost; acc.profit += r.profit;
       return acc;
-    }, { sales: 0, cost: 0, profit: 0 });
+    }, { qty: 0, sales: 0, cost: 0, profit: 0 });
   }
 
   function filterRecords(records, filter) {

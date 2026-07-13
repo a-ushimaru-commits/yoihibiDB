@@ -11,9 +11,12 @@ test('shiftYearMonth moves the year and keeps the month', () => {
   assert.equal(shiftYearMonth('2025-12', 1), '2026-12');
 });
 
-test('sumRecords totals sales/cost/profit', () => {
-  const totals = sumRecords([{ sales: 100, cost: 40, profit: 60 }, { sales: 50, cost: 20, profit: 30 }]);
-  assert.deepEqual(totals, { sales: 150, cost: 60, profit: 90 });
+test('sumRecords totals qty/sales/cost/profit, defaulting missing qty to 0', () => {
+  const totals = sumRecords([{ qty: 2, sales: 100, cost: 40, profit: 60 }, { qty: 3, sales: 50, cost: 20, profit: 30 }]);
+  assert.deepEqual(totals, { qty: 5, sales: 150, cost: 60, profit: 90 });
+
+  const totalsWithoutQty = sumRecords([{ sales: 100, cost: 40, profit: 60 }]);
+  assert.equal(totalsWithoutQty.qty, 0);
 });
 
 test('filterRecords matches only provided keys', () => {

@@ -38,6 +38,7 @@ test('parseBaseWorkbook aggregates across rows sharing the same brand within mon
   assert.equal(mct.sales, 1000); // 700 + 300
   assert.equal(mct.cost, 400); // 300 + 100
   assert.equal(mct.profit, 600); // 400 + 200
+  assert.equal(mct.qty, 3); // 2 + 1
 });
 
 test('parseBaseWorkbook keeps different brands separate even within the same month/channel/type', () => {
