@@ -8,7 +8,7 @@ h1 { font-size: 22px; margin: 0 0 16px; }
 .kpi-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(60,64,67,.3); padding: 16px; min-width: 200px; flex: 1; }
 .kpi-label { font-size: 13px; color: #5f6368; }
 .kpi-value { font-size: 32px; font-weight: 700; margin: 4px 0; }
-.kpi-sub { font-size: 18px; color: #5f6368; }
+.kpi-sub { font-size: 18px; color: #1a73e8; }
 .chart-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
 .chart-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(60,64,67,.3); padding: 16px; flex: 1; min-width: 320px; }
 table.channel-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
