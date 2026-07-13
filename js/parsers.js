@@ -388,9 +388,10 @@
       throw new Error('目標ファイルの「合計」行の直後に原価行が見つかりません。');
     }
 
+    const THOUSAND_YEN = 1000; // figures in this workbook are 千円 (thousand-yen) units, unlike the raw-yen records elsewhere
     return budgetCols.map(({ yearMonth, colIndex }) => {
-      const sales = Number(salesRow[colIndex]) || 0;
-      const cost = Number(costRow[colIndex]) || 0;
+      const sales = (Number(salesRow[colIndex]) || 0) * THOUSAND_YEN;
+      const cost = (Number(costRow[colIndex]) || 0) * THOUSAND_YEN;
       return { yearMonth, salesTarget: sales, profitTarget: sales - cost };
     });
   }

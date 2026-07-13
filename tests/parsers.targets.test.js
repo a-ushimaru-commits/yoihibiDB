@@ -24,11 +24,11 @@ function buildTargetsWorkbook() {
   return wb;
 }
 
-test('parseTargetsWorkbook extracts sales/gross-profit targets from the 合計 row\'s 予算 columns, per month', () => {
+test('parseTargetsWorkbook extracts sales/gross-profit targets from the 合計 row\'s 予算 columns, per month, converted from 千円 to yen', () => {
   const targets = parseTargetsWorkbook(buildTargetsWorkbook(), 2026);
   assert.deepEqual(targets, [
-    { yearMonth: '2026-06', salesTarget: 12200, profitTarget: 12200 - 4225 },
-    { yearMonth: '2026-07', salesTarget: 13000, profitTarget: 13000 - 4500 },
+    { yearMonth: '2026-06', salesTarget: 12200000, profitTarget: (12200 - 4225) * 1000 },
+    { yearMonth: '2026-07', salesTarget: 13000000, profitTarget: (13000 - 4500) * 1000 },
   ]);
 });
 
@@ -45,8 +45,8 @@ test('parseTargetsWorkbook maps months 12 and after to the following calendar ye
 
   const targets = parseTargetsWorkbook(wb, 2026);
   assert.deepEqual(targets, [
-    { yearMonth: '2026-12', salesTarget: 5000, profitTarget: 3000 },
-    { yearMonth: '2027-01', salesTarget: 6000, profitTarget: 3500 },
+    { yearMonth: '2026-12', salesTarget: 5000000, profitTarget: 3000000 },
+    { yearMonth: '2027-01', salesTarget: 6000000, profitTarget: 3500000 },
   ]);
 });
 
@@ -62,7 +62,7 @@ test('parseTargetsWorkbook ignores aggregate columns (上期計/下期計/年間
   XLSX.utils.book_append_sheet(wb, ws, 'よい日々');
 
   const targets = parseTargetsWorkbook(wb, 2026);
-  assert.deepEqual(targets, [{ yearMonth: '2026-06', salesTarget: 12200, profitTarget: 12200 - 4225 }]);
+  assert.deepEqual(targets, [{ yearMonth: '2026-06', salesTarget: 12200000, profitTarget: (12200 - 4225) * 1000 }]);
 });
 
 test('parseTargetsWorkbook throws a clear error when the 媒体/項目 header row is missing', () => {
