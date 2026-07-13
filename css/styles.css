@@ -9,6 +9,7 @@ h1 { font-size: 22px; margin: 0 0 16px; }
 .kpi-row-with-upload .kpi-row { flex: 1; margin-bottom: 0; }
 .kpi-row-with-upload .dropzone { flex: 0 0 240px; padding: 8px 10px; font-size: 11px; line-height: 1.4; }
 .kpi-row-with-upload .dropzone input[type="file"] { font-size: 11px; }
+.kpi-row-spacer { flex: 0 0 240px; }
 .kpi-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(60,64,67,.3); padding: 16px; min-width: 200px; flex: 1; }
 .kpi-label { font-size: 13px; color: #5f6368; }
 .kpi-value { font-size: 32px; font-weight: 700; margin: 4px 0; }
@@ -42,7 +43,10 @@ table.ocms-table th, table.ocms-table td { padding: 6px 10px; border-bottom: 1px
 table.ocms-table th:first-child, table.ocms-table td:first-child, table.ocms-table th:nth-child(2), table.ocms-table td:nth-child(2) { text-align: left; position: sticky; background: inherit; }
 table.ocms-table th:first-child, table.ocms-table td:first-child { left: 0; }
 table.ocms-table th:nth-child(2), table.ocms-table td:nth-child(2) { left: 48px; }
-table.ocms-table th[colspan="4"] { text-align: left; }
+table.ocms-table thead tr:last-child th { text-align: left; }
+table.ocms-table th[colspan="4"] { text-align: left; border-right: 2px solid #5f6368; }
+table.ocms-table thead tr:last-child th:nth-child(4n) { border-right: 2px solid #5f6368; }
+table.ocms-table tbody td:nth-child(4n+6) { border-right: 2px solid #5f6368; }
 tr.ocms-teiki td, tr.ocms-teiki th { background: #e8f0fe; }
 tr.ocms-tsujo td, tr.ocms-tsujo th { background: #e6f4ea; }
 tr.ocms-total td, tr.ocms-total th { background: #202124; color: #fff; }
