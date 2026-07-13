@@ -3,7 +3,8 @@ body { margin: 0; padding: 24px; background: #fafafa; color: #202124; }
 h1 { font-size: 22px; margin: 0; }
 .header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
 .dropzone { border: 2px dashed #9aa0a6; border-radius: 8px; padding: 12px 16px; text-align: center; color: #5f6368; font-size: 13px; }
-.header-row .dropzone { flex: 0 0 360px; margin-bottom: 0; }
+.header-row .dropzone { flex: 0 0 220px; margin-bottom: 0; padding: 6px 8px; font-size: 10px; line-height: 1.4; }
+.header-row .dropzone input[type="file"] { font-size: 10px; }
 .dropzone.dragover { border-color: #1a73e8; background: #e8f0fe; }
 .month-selector { margin-bottom: 16px; }
 .kpi-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
