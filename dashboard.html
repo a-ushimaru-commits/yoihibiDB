@@ -6,11 +6,12 @@
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<h1>よい日々 売上進捗ダッシュボード</h1>
-
-<div id="dropzone" class="dropzone">
-  ここに1期実績xlsx／月次実績xlsx／日次売上csv／商品コード→ブランド対応表xlsxをドラッグ&ドロップ、または
-  <input type="file" id="fileInput" multiple accept=".xlsx,.csv">
+<div class="header-row">
+  <h1>よい日々 売上進捗ダッシュボード</h1>
+  <div id="dropzone" class="dropzone">
+    ここに1期実績xlsx／月次実績xlsx／日次売上csv／商品コード→ブランド対応表xlsxをドラッグ&ドロップ、または
+    <input type="file" id="fileInput" multiple accept=".xlsx,.csv">
+  </div>
 </div>
 <p id="status"></p>
 <div id="warnings"></div>
@@ -26,6 +27,18 @@
 <h2>自社 KPI</h2>
 <div id="ownChannelKpiRow" class="kpi-row"></div>
 
+<h2>自社 月別サマリー（定期/通常比較 + ブランド別×月次）</h2>
+<div id="ownChannelMonthlySummary"></div>
+
+<h2>自社 月次推移（ブランド×定期/通常）</h2>
+<div id="ownChannelBrandMonthlyPivot"></div>
+
+<h2>月次推移（ブランド×定期/通常）</h2>
+<div id="brandMonthlyPivot"></div>
+
+<h2>月次推移（媒体×定期/通常）</h2>
+<div id="channelMonthlyPivot"></div>
+
 <div class="chart-row">
   <div class="chart-card"><canvas id="trendChart" height="220"></canvas></div>
   <div class="chart-card"><canvas id="dailyChart" height="220"></canvas></div>
@@ -34,18 +47,6 @@
 <div id="channelTable"></div>
 <h2>ブランド別</h2>
 <div id="brandTable"></div>
-
-<h2>自社 月次推移（ブランド×定期/通常）</h2>
-<div id="ownChannelBrandMonthlyPivot"></div>
-
-<h2>自社 月別サマリー（定期/通常比較 + ブランド別×月次）</h2>
-<div id="ownChannelMonthlySummary"></div>
-
-<h2>月次推移（ブランド×定期/通常）</h2>
-<div id="brandMonthlyPivot"></div>
-
-<h2>月次推移（媒体×定期/通常）</h2>
-<div id="channelMonthlyPivot"></div>
 
 <details class="settings-panel">
   <summary>設定</summary>
