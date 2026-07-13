@@ -1,5 +1,5 @@
 (function () {
-  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, detectFileType, guessBrandForProductCode } = window.YoiHibi;
+  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, parseTargetsWorkbook, detectFileType, guessBrandForProductCode } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
   const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot, getChannelMonthlyPivot } = window.YoiHibi;
   const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML } = window.YoiHibi;
@@ -7,6 +7,10 @@
   const store = createStore(window.localStorage);
   let trendChart = null;
   let dailyChart = null;
+
+  // よい日々目標.xlsx の「6月」列は2026年度（2026-06〜2027-05）の6月を指す。
+  // 翌年度分のファイルが来たら更新する。
+  const TARGETS_FISCAL_YEAR_START = 2026;
 
   function el(id) { return document.getElementById(id); }
 
@@ -43,6 +47,12 @@
         const mapping = parseBrandLookup(workbook);
         store.setProductBrandMapping(mapping);
         showStatus(`商品コード→ブランド対応表を取込みました（${Object.keys(mapping).length}件）`);
+      } else if (type === 'targets') {
+        const parsedTargets = parseTargetsWorkbook(workbook, TARGETS_FISCAL_YEAR_START);
+        const parsedMonths = new Set(parsedTargets.map(t => t.yearMonth));
+        const merged = store.getState().targets.filter(t => !parsedMonths.has(t.yearMonth)).concat(parsedTargets);
+        store.setTargets(merged);
+        showStatus(`年間目標を取込みました（${parsedTargets.length}ヶ月分）`);
       } else if (type === 'monthly') {
         const { records, unmappedMedia, unmappedProducts } = parseMonthlyWorkbook(workbook, store.getState().mediaMapping, store.getState().productBrandMapping);
         const months = Array.from(new Set(records.map(r => r.yearMonth)));
