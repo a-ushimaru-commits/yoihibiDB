@@ -138,6 +138,36 @@ test('parseMonthlyWorkbook decides 定期/通常 from 商品名 (containing "定
   assert.equal(tsujo.sales, 500 + 200); // the other two, despite one saying 販売区分='定期'
 });
 
+function buildMonthlyWorkbookWithJan() {
+  const header = ['出荷日', '媒体名', '販売区分', '商品コード', '商品名', '金額合計', '仕入金額', '粗利額', 'JANコード', '構成数', '数量'];
+  const rows = [
+    header,
+    // JAN 0061998079829: 構成数=1, cost consistently 2210/unit across two rows with different 数量
+    ['26/06/09', 'よい日々', '通常', 'FH0001010101000', 'ｵｰｶﾞﾆｯｸ ｳﾄﾞｽﾞｵｲﾙ/500ml', 17328, 8840, 8488, '0061998079829', 1, 4],
+    ['26/06/10', 'よい日々', '通常', 'FH0001010101000', 'ｵｰｶﾞﾆｯｸ ｳﾄﾞｽﾞｵｲﾙ/500ml', 5880, 2210, 3670, '0061998079829', 1, 1],
+    // JAN 1111111111111: 構成数=2 (2-pack), 数量=3 -> 6 base units, cost 600 total -> 100/unit
+    ['26/06/11', 'よい日々', '通常', 'FH0002020202000', 'ﾍﾞﾙﾒ2本ｾｯﾄ', 3000, 600, 2400, '1111111111111', 2, 3],
+    // 構成数×数量 = 0 -> excluded from janUnitCosts entirely
+    ['26/06/12', 'よい日々', '通常', 'FH0003030303000', '謎の商品', 0, 0, 0, '9999999999999', 0, 0],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '売上明細_提出');
+  return wb;
+}
+
+test('parseMonthlyWorkbook computes janUnitCosts as total 仕入金額 / total (構成数×数量) across all rows sharing a JAN code', () => {
+  const { janUnitCosts } = parseMonthlyWorkbook(buildMonthlyWorkbookWithJan());
+  assert.equal(janUnitCosts['0061998079829'], 2210); // (8840+2210) / (1*4 + 1*1) = 11050/5
+  assert.equal(janUnitCosts['1111111111111'], 100); // 600 / (2*3)
+  assert.equal('9999999999999' in janUnitCosts, false);
+});
+
+test('parseMonthlyWorkbook returns an empty janUnitCosts when the file has no JANコード/構成数/数量 columns', () => {
+  const { janUnitCosts } = parseMonthlyWorkbook(buildMonthlyWorkbook());
+  assert.deepEqual(janUnitCosts, {});
+});
+
 test('parseMonthlyWorkbook throws a clear error when 売上明細_提出 sheet is missing', () => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['x']]), 'Sheet1');
