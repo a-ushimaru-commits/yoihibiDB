@@ -25,24 +25,25 @@
     return `<span class="${cls}">${text}</span>`;
   }
 
-  function renderKpiCardsHTML(c) {
+  function renderKpiCardsHTML(c, labelPrefix) {
+    const prefix = labelPrefix || '';
     return `
       <div class="kpi-card">
-        <div class="kpi-label">売上</div>
+        <div class="kpi-label">${prefix}売上</div>
         <div class="kpi-value">${formatYen(c.sales)}</div>
         <div class="kpi-sub">1期比 ${pctSpan(c.salesYoY)} ／ 前月比 ${pctSpan(c.salesMoM)}</div>
         <div class="kpi-sub">目標達成率（全体） ${pctSpan(c.salesTargetRate)}</div>
         <div class="kpi-sub">目標達成率（日割） ${pctSpan(c.salesTargetRateProrated)}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">粗利</div>
+        <div class="kpi-label">${prefix}粗利</div>
         <div class="kpi-value">${formatYen(c.profit)}</div>
         <div class="kpi-sub">1期比 ${pctSpan(c.profitYoY)} ／ 前月比 ${pctSpan(c.profitMoM)}</div>
         <div class="kpi-sub">目標達成率（全体） ${pctSpan(c.profitTargetRate)}</div>
         <div class="kpi-sub">目標達成率（日割） ${pctSpan(c.profitTargetRateProrated)}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">粗利率</div>
+        <div class="kpi-label">${prefix}粗利率</div>
         <div class="kpi-value">${formatPct(c.profitRate)}</div>
       </div>
     `;

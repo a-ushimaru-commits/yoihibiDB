@@ -59,6 +59,24 @@ test('renderKpiCardsHTML colors positive percentages red and negative ones blue,
   assert.doesNotMatch(html, /<span[^>]*>N\/A<\/span>/); // profitMoM null -> plain, no color span
 });
 
+test('renderKpiCardsHTML prefixes labels with the given labelPrefix (e.g. 自社売上/自社粗利/自社粗利率)', () => {
+  const html = renderKpiCardsHTML({
+    sales: 3000000, profit: 1200000, profitRate: 0.4,
+  }, '自社');
+  assert.match(html, /<div class="kpi-label">自社売上<\/div>/);
+  assert.match(html, /<div class="kpi-label">自社粗利<\/div>/);
+  assert.match(html, /<div class="kpi-label">自社粗利率<\/div>/);
+});
+
+test('renderKpiCardsHTML omits the labelPrefix by default (plain 売上/粗利/粗利率)', () => {
+  const html = renderKpiCardsHTML({
+    sales: 3000000, profit: 1200000, profitRate: 0.4,
+  });
+  assert.match(html, /<div class="kpi-label">売上<\/div>/);
+  assert.match(html, /<div class="kpi-label">粗利<\/div>/);
+  assert.match(html, /<div class="kpi-label">粗利率<\/div>/);
+});
+
 test('renderChannelTableHTML emits one row per channel with sales/profit/profitRate/salesYoY', () => {
   const html = renderChannelTableHTML([
     { channel: 'TV', sales: 1000, profit: 400, profitRate: 0.4, salesYoY: 0.2 },
