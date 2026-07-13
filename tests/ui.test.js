@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML } = require('../js/ui.js');
+const { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML } = require('../js/ui.js');
 
 test('formatYen adds yen sign and thousands separators, rounds to integer', () => {
   assert.equal(formatYen(1234567.8), '¥1,234,568');
@@ -11,6 +11,11 @@ test('formatPct formats ratio as percent with 1 decimal, null as N/A', () => {
   assert.equal(formatPct(0.256), '25.6%');
   assert.equal(formatPct(-0.05), '-5.0%');
   assert.equal(formatPct(null), 'N/A');
+});
+
+test('formatNumber adds thousands separators without a currency symbol, rounding to integer', () => {
+  assert.equal(formatNumber(1234.6), '1,235');
+  assert.equal(formatNumber(0), '0');
 });
 
 test('renderKpiCardsHTML includes sales, profit, profitRate and both comparison figures', () => {
@@ -220,6 +225,68 @@ test('renderChannelMonthlyPivotHTML renders a wide pivot table with month rows a
 
 test('renderChannelMonthlyPivotHTML shows an empty-state message when there are no months yet', () => {
   const html = renderChannelMonthlyPivotHTML({ months: [], channels: ['自社', 'アマゾン', '楽天', 'yahoo', '卸', 'TV', 'その他'], rows: [] });
+  assert.doesNotMatch(html, /<table/);
+  assert.match(html, /表示できるデータがありません/);
+});
+
+function sampleOwnChannelSummary() {
+  const zeroYoy = { qtyPct: 0, salesPct: 0, profitPct: 0, profitRatePtDiff: 0 };
+  const brandA = {
+    teiki: { qty: 12, sales: 1200, profit: 720, profitRate: 0.6 },
+    tsujo: { qty: 6, sales: 600, profit: 360, profitRate: 0.6 },
+    total: { qty: 18, sales: 1800, profit: 1080, profitRate: 0.6 },
+    yoy: { teiki: zeroYoy, tsujo: zeroYoy, total: zeroYoy },
+    ttmYoy: { teiki: zeroYoy, tsujo: zeroYoy, total: zeroYoy },
+  };
+  return {
+    months: ['2026-06'],
+    brands: ['BrandA'],
+    rows: [{
+      yearMonth: '2026-06',
+      teiki: { qty: 12, sales: 1200, profit: 720, profitRate: 0.6 },
+      tsujo: { qty: 6, sales: 600, profit: 360, profitRate: 0.6 },
+      total: { qty: 18, sales: 1800, profit: 1080, profitRate: 0.6 },
+      yoy: {
+        teiki: { qtyPct: 0.2, salesPct: 0.2, profitPct: 0.2, profitRatePtDiff: 0 },
+        tsujo: { qtyPct: -0.1, salesPct: -0.1, profitPct: -0.1, profitRatePtDiff: -0.02 },
+        total: { qtyPct: 0.1, salesPct: 0.1, profitPct: 0.1, profitRatePtDiff: null },
+      },
+      ttmYoy: { teiki: zeroYoy, tsujo: zeroYoy, total: zeroYoy },
+      byBrand: { BrandA: brandA },
+    }],
+  };
+}
+
+test('renderOwnChannelMonthlySummaryHTML renders a table with 自社全体 and per-brand column groups', () => {
+  const html = renderOwnChannelMonthlySummaryHTML(sampleOwnChannelSummary());
+  assert.match(html, /<table class="ocms-table">/);
+  assert.match(html, /自社全体/);
+  assert.match(html, /<th colspan="4">BrandA<\/th>/);
+  assert.match(html, /2026-06/);
+  assert.match(html, /¥1,200/); // teiki sales
+  assert.match(html, /12/); // teiki qty (formatNumber, no ¥)
+});
+
+test('renderOwnChannelMonthlySummaryHTML emits 9 rows per month (定期/通常/月計 x 現在値/昨対比/年計対比), classed by row type', () => {
+  const html = renderOwnChannelMonthlySummaryHTML(sampleOwnChannelSummary());
+  assert.match(html, /class="ocms-teiki"/);
+  assert.match(html, /class="ocms-tsujo"/);
+  assert.match(html, /class="ocms-total"/);
+  assert.match(html, /class="ocms-yoy"/);
+  assert.match(html, /class="ocms-ttm"/);
+  const rowCount = (html.match(/<tr class="ocms-(teiki|tsujo|total|yoy|ttm)"/g) || []).length;
+  assert.equal(rowCount, 9);
+});
+
+test('renderOwnChannelMonthlySummaryHTML colors positive percentages green and negative ones red, leaving N/A uncolored', () => {
+  const html = renderOwnChannelMonthlySummaryHTML(sampleOwnChannelSummary());
+  assert.match(html, /<td class="pct-positive">20\.0%<\/td>/); // yoy.teiki.qtyPct = 0.2
+  assert.match(html, /<td class="pct-negative">-10\.0%<\/td>/); // yoy.tsujo.qtyPct = -0.1
+  assert.match(html, /<td>N\/A<\/td>/); // yoy.total.profitRatePtDiff = null
+});
+
+test('renderOwnChannelMonthlySummaryHTML shows an empty-state message when there are no rows yet', () => {
+  const html = renderOwnChannelMonthlySummaryHTML({ months: [], brands: [], rows: [] });
   assert.doesNotMatch(html, /<table/);
   assert.match(html, /表示できるデータがありません/);
 });

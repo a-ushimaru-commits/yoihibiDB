@@ -14,6 +14,10 @@
     return (n * 100).toFixed(1) + '%';
   }
 
+  function formatNumber(n) {
+    return Math.round(n).toLocaleString('ja-JP');
+  }
+
   function renderKpiCardsHTML(c) {
     return `
       <div class="kpi-card">
@@ -232,5 +236,52 @@
     </div>`;
   }
 
-  return { formatYen, formatPct, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML };
+  function renderOwnChannelMonthlySummaryHTML(summary) {
+    if (!summary || !summary.rows || summary.rows.length === 0) {
+      return '<p class="ocms-empty">表示できるデータがありません（自社チャネルの月次実績・日次実績を取込むと表示されます）。</p>';
+    }
+    const brands = summary.brands || [];
+
+    function metricCells(m) {
+      return `<td>${formatNumber(m.qty)}</td><td>${formatYen(m.sales)}</td><td>${formatYen(m.profit)}</td><td>${formatPct(m.profitRate)}</td>`;
+    }
+    function pctTd(value) {
+      if (value == null) return '<td>N/A</td>';
+      const cls = value > 0 ? 'pct-positive' : (value < 0 ? 'pct-negative' : '');
+      return cls ? `<td class="${cls}">${formatPct(value)}</td>` : `<td>${formatPct(value)}</td>`;
+    }
+    function yoyCells(y) {
+      return pctTd(y.qtyPct) + pctTd(y.salesPct) + pctTd(y.profitPct) + pctTd(y.profitRatePtDiff);
+    }
+
+    const brandHeaderCells = brands.map(b => `<th colspan="4">${b}</th>`).join('');
+    const brandSubHeaderCells = brands.map(() => '<th>数量</th><th>売上</th><th>粗利</th><th>粗利率</th>').join('');
+
+    const bodyRows = summary.rows.map(row => {
+      const brandCellsFor = accessor => brands.map(b => metricCells(accessor(row.byBrand[b]))).join('');
+      const brandYoyCellsFor = accessor => brands.map(b => yoyCells(accessor(row.byBrand[b]))).join('');
+
+      return `<tr class="ocms-teiki"><td>${row.yearMonth}</td><td>定期</td>${metricCells(row.teiki)}${brandCellsFor(bb => bb.teiki)}</tr>
+        <tr class="ocms-tsujo"><td>${row.yearMonth}</td><td>通常</td>${metricCells(row.tsujo)}${brandCellsFor(bb => bb.tsujo)}</tr>
+        <tr class="ocms-total"><td>${row.yearMonth}</td><td>月計</td>${metricCells(row.total)}${brandCellsFor(bb => bb.total)}</tr>
+        <tr class="ocms-yoy"><td>${row.yearMonth}</td><td>昨対比（定期）</td>${yoyCells(row.yoy.teiki)}${brandYoyCellsFor(bb => bb.yoy.teiki)}</tr>
+        <tr class="ocms-yoy"><td>${row.yearMonth}</td><td>昨対比（通常）</td>${yoyCells(row.yoy.tsujo)}${brandYoyCellsFor(bb => bb.yoy.tsujo)}</tr>
+        <tr class="ocms-yoy"><td>${row.yearMonth}</td><td>昨対比（月計）</td>${yoyCells(row.yoy.total)}${brandYoyCellsFor(bb => bb.yoy.total)}</tr>
+        <tr class="ocms-ttm"><td>${row.yearMonth}</td><td>年計対比（定期）</td>${yoyCells(row.ttmYoy.teiki)}${brandYoyCellsFor(bb => bb.ttmYoy.teiki)}</tr>
+        <tr class="ocms-ttm"><td>${row.yearMonth}</td><td>年計対比（通常）</td>${yoyCells(row.ttmYoy.tsujo)}${brandYoyCellsFor(bb => bb.ttmYoy.tsujo)}</tr>
+        <tr class="ocms-ttm"><td>${row.yearMonth}</td><td>年計対比（月計）</td>${yoyCells(row.ttmYoy.total)}${brandYoyCellsFor(bb => bb.ttmYoy.total)}</tr>`;
+    }).join('');
+
+    return `<div class="ocms-scroll">
+      <table class="ocms-table">
+        <thead>
+          <tr><th rowspan="2">月</th><th rowspan="2">区分</th><th colspan="4">自社全体</th>${brandHeaderCells}</tr>
+          <tr><th>数量</th><th>売上</th><th>粗利</th><th>粗利率</th>${brandSubHeaderCells}</tr>
+        </thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  return { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML };
 });
