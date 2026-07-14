@@ -239,12 +239,17 @@
     const allSelfRecords = filterRecords(collectPivotRecords(state), { channel: '自社' });
     const months = yearMonth ? [yearMonth] : Array.from(new Set(allSelfRecords.map(r => r.yearMonth))).sort();
 
-    const brandSales = new Map();
+    const allBrands = new Set();
+    allSelfRecords.forEach(r => { if (r.brand != null) allBrands.add(r.brand); });
+
+    // ブランドの並び順は1期(baseRecords)の売上額の降順。2期のみに存在するブランドは1期売上0として扱う
+    const baseMonths = new Set((state.baseRecords || []).map(r => r.yearMonth));
+    const baseBrandSales = new Map();
     allSelfRecords.forEach(r => {
-      if (r.brand == null) return;
-      brandSales.set(r.brand, (brandSales.get(r.brand) || 0) + r.sales);
+      if (r.brand == null || !baseMonths.has(r.yearMonth)) return;
+      baseBrandSales.set(r.brand, (baseBrandSales.get(r.brand) || 0) + r.sales);
     });
-    const brands = Array.from(brandSales.keys()).sort((a, b) => brandSales.get(b) - brandSales.get(a));
+    const brands = Array.from(allBrands).sort((a, b) => (baseBrandSales.get(b) || 0) - (baseBrandSales.get(a) || 0));
 
     function withRate(totals) {
       return { qty: totals.qty, sales: totals.sales, profit: totals.profit, profitRate: profitRate(totals) };

@@ -511,12 +511,42 @@ function ownChannelSummaryState() {
 test('getOwnChannelMonthlySummary restricts to 自社 channel and combines all brands into teiki/tsujo/total for the month', () => {
   const summary = getOwnChannelMonthlySummary(ownChannelSummaryState());
   assert.ok(summary.months.includes('2026-06'));
-  assert.deepEqual(summary.brands, ['BrandA', 'BrandB']); // BrandA total sales (3500) > BrandB (100)
+  assert.deepEqual(summary.brands, ['BrandA', 'BrandB']); // BrandA 1期(baseRecords) sales (1500) > BrandB (0, no 1期 data)
 
   const row = summary.rows.find(r => r.yearMonth === '2026-06');
   assert.deepEqual(row.teiki, { qty: 12, sales: 1200, profit: 720, profitRate: 0.6 });
   assert.deepEqual(row.tsujo, { qty: 7, sales: 700, profit: 420, profitRate: 0.6 }); // BrandA(600)+BrandB(100)
   assert.deepEqual(row.total, { qty: 19, sales: 1900, profit: 1140, profitRate: 0.6 });
+});
+
+function brandSortState() {
+  return {
+    baseRecords: [
+      { yearMonth: '2025-06', channel: '自社', type: '通常', brand: 'BrandLow1ki', sales: 100, cost: 40, profit: 60, qty: 1 },
+      { yearMonth: '2025-06', channel: '自社', type: '通常', brand: 'BrandHigh1ki', sales: 5000, cost: 2000, profit: 3000, qty: 10 },
+    ],
+    monthlyRecords: [
+      // BrandLow1ki's 2期 sales are huge, but its 1期 sales are tiny -- sort must follow 1期, not the combined total
+      { yearMonth: '2026-06', channel: '自社', type: '通常', brand: 'BrandLow1ki', sales: 10000, cost: 4000, profit: 6000, qty: 20 },
+    ],
+    dailyRecords: [],
+    targets: [], ownChannelTargets: [], mediaMapping: {}, productBrandMapping: {},
+  };
+}
+
+test('getOwnChannelMonthlySummary sorts brands by 1期(baseRecords)売上 descending, not by the combined total across all periods', () => {
+  const summary = getOwnChannelMonthlySummary(brandSortState());
+  // combined total would rank BrandLow1ki first (10100 vs 5000), but 1期-only sales rank BrandHigh1ki first (5000 vs 100)
+  assert.deepEqual(summary.brands, ['BrandHigh1ki', 'BrandLow1ki']);
+});
+
+test('getOwnChannelMonthlySummary still includes a brand with no 1期(baseRecords) presence at all, ranked after brands that do have 1期 sales', () => {
+  const state = brandSortState();
+  state.monthlyRecords.push({ yearMonth: '2026-06', channel: '自社', type: '通常', brand: 'BrandNew2kiOnly', sales: 999999, cost: 1, profit: 999998, qty: 1 });
+  const summary = getOwnChannelMonthlySummary(state);
+  assert.ok(summary.brands.includes('BrandNew2kiOnly'));
+  assert.ok(summary.brands.indexOf('BrandHigh1ki') < summary.brands.indexOf('BrandNew2kiOnly'));
+  assert.ok(summary.brands.indexOf('BrandLow1ki') < summary.brands.indexOf('BrandNew2kiOnly'));
 });
 
 test('getOwnChannelMonthlySummary computes 昨対比 (yoy) against the same month one year earlier, with profitRate as a point difference', () => {
