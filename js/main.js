@@ -182,8 +182,9 @@
       datasets: [
         { label: '2期 売上', data: trend.map(t => t.currentSales), borderColor: '#1a73e8', fill: false, yAxisID: 'y' },
         { label: '1期 売上', data: trend.map(t => t.baseSales), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'y' },
-        { label: '定期数', data: trend.map(t => t.teikiQty), borderColor: '#188038', fill: false, yAxisID: 'qty' },
-        { label: '通常数', data: trend.map(t => t.tsujoQty), borderColor: '#f9ab00', fill: false, yAxisID: 'qty' },
+        // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
+        { label: '定期数', data: trend.map(t => t.teikiQty), borderColor: '#4285f4', fill: false, yAxisID: 'qty' },
+        { label: '通常数', data: trend.map(t => t.tsujoQty), borderColor: '#188038', fill: false, yAxisID: 'qty' },
       ],
     };
     if (trendChart) { trendChart.data = data; trendChart.options = QTY_AXIS_OPTIONS; trendChart.update(); return; }
@@ -197,8 +198,9 @@
       datasets: [
         { label: '当月累積売上', data: series.map(s => s.actualSales), borderColor: '#1a73e8', fill: false, yAxisID: 'y' },
         { label: '1期同月ペース', data: series.map(s => s.paceSales), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'y' },
-        { label: '定期数（累積）', data: series.map(s => s.actualTeikiQty), borderColor: '#188038', fill: false, yAxisID: 'qty' },
-        { label: '通常数（累積）', data: series.map(s => s.actualTsujoQty), borderColor: '#f9ab00', fill: false, yAxisID: 'qty' },
+        // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
+        { label: '定期数（累積）', data: series.map(s => s.actualTeikiQty), borderColor: '#4285f4', fill: false, yAxisID: 'qty' },
+        { label: '通常数（累積）', data: series.map(s => s.actualTsujoQty), borderColor: '#188038', fill: false, yAxisID: 'qty' },
       ],
     };
     if (dailyChart) { dailyChart.data = data; dailyChart.options = QTY_AXIS_OPTIONS; dailyChart.update(); return; }

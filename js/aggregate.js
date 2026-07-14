@@ -348,7 +348,9 @@
       const teiki = sumRecords(filterRecords(monthRecords, { type: '定期' }));
       const tsujo = sumRecords(filterRecords(monthRecords, { type: '通常' }));
       const baseMonth = shiftYearMonth(yearMonth, -1);
-      const base = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth }));
+      const baseRecordsForMonth = filterRecords(state.baseRecords, { yearMonth: baseMonth });
+      const base = sumRecords(baseRecordsForMonth);
+      const hasBaseData = baseRecordsForMonth.length > 0;
       const target = findTarget(state, yearMonth);
       return {
         yearMonth,
@@ -356,8 +358,9 @@
         currentProfit: current.profit,
         teikiQty: teiki.qty,
         tsujoQty: tsujo.qty,
-        baseSales: base.sales,
-        baseProfit: base.profit,
+        // 1期データが全くない月は「比較不能」を表す null にする（0だと「前年売上ゼロ」と誤読されるため）
+        baseSales: hasBaseData ? base.sales : null,
+        baseProfit: hasBaseData ? base.profit : null,
         targetSales: target ? target.salesTarget : null,
         targetProfit: target ? target.profitTarget : null,
       };

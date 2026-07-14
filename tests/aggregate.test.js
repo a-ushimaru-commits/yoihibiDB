@@ -174,7 +174,17 @@ test('getMonthlyTrend sources currentSales directly from baseRecords for months 
   const trend = getMonthlyTrend(sampleState());
   const june2025 = trend.find(t => t.yearMonth === '2025-06');
   assert.equal(june2025.currentSales, 3000); // 1000 (TV/通常) + 2000 (自社/定期) from baseRecords itself
-  assert.equal(june2025.baseSales, 0); // no 2024-06 baseRecords exists
+  assert.equal(june2025.baseSales, null); // no 2024-06 baseRecords at all -> null (no comparison available), not a misleading 0
+});
+
+test('getMonthlyTrend distinguishes "no 1期 comparison data at all" (null) from "1期 sales genuinely totaling zero" (0)', () => {
+  const state = sampleState();
+  // 2025-07 baseRecords row genuinely nets to zero sales (e.g. a return), unlike 2024-06 which has no row at all
+  state.baseRecords.push({ yearMonth: '2025-07', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 0, cost: 0, profit: 0 });
+  state.monthlyRecords.push({ yearMonth: '2026-07', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 500, cost: 200, profit: 300 });
+  const trend = getMonthlyTrend(state);
+  const july2026 = trend.find(t => t.yearMonth === '2026-07');
+  assert.equal(july2026.baseSales, 0); // 2025-07 baseRecords row DOES exist, genuinely sums to 0 -- not null
 });
 
 test('getMonthlyTrend caps the window at the most recent 12 months even when more history exists', () => {
