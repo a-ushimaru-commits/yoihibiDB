@@ -38,7 +38,7 @@
     const offset = kpiRingDashOffset(rate).toFixed(2);
     const label = formatPct(rate);
     return `<div class="kpi-ring-wrap">
-      <svg class="kpi-ring" viewBox="0 0 120 120" width="88" height="88">
+      <svg class="kpi-ring" viewBox="0 0 120 120" width="76" height="76">
         <circle class="kpi-ring-bg" cx="60" cy="60" r="${KPI_RING_RADIUS}" />
         <circle class="kpi-ring-fg" cx="60" cy="60" r="${KPI_RING_RADIUS}" stroke="${color}"
           stroke-dasharray="${KPI_RING_CIRCUMFERENCE.toFixed(2)}" stroke-dashoffset="${offset}" />
