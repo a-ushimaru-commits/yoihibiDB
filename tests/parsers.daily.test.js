@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseCsv, parseDailyCsv } = require('../js/parsers.js');
+const { parseCsv, parseDailyCsv, rowsToCsv } = require('../js/parsers.js');
 
 test('parseCsv handles plain comma-separated rows', () => {
   const rows = parseCsv('a,b,c\n1,2,3\n');
@@ -15,6 +15,17 @@ test('parseCsv handles quoted fields with embedded commas and escaped quotes', (
 test('parseCsv tolerates trailing newline and CRLF line endings', () => {
   const rows = parseCsv('a,b\r\n1,2\r\n');
   assert.deepEqual(rows, [['a', 'b'], ['1', '2']]);
+});
+
+test('rowsToCsv stringifies rows into CSV text, quoting fields that contain commas/quotes/newlines', () => {
+  const csv = rowsToCsv([['a', 'b,c', 'd"e'], [1, 2, 3]]);
+  assert.equal(csv, 'a,"b,c","d""e"\r\n1,2,3\r\n');
+});
+
+test('rowsToCsv round-trips through parseCsv', () => {
+  const original = [['出荷日', '媒体名'], ['26/06/09', 'よい日々, テスト']];
+  const csv = rowsToCsv(original);
+  assert.deepEqual(parseCsv(csv), original);
 });
 
 function buildDailyCsv() {
@@ -55,6 +66,20 @@ test('parseDailyCsv filters by 商品コード starting with FH (case-insensitiv
   assert.equal(total, 1500 + 2000 + 300); // non-FH product code row excluded
 
   assert.ok(unmappedMedia['謎の新規媒体']);
+});
+
+test('parseDailyCsv also returns enrichedRows: original CSV rows with 分類_媒体/分類_定期通常/分類_ブランド/分類_仕入価格 appended, excluding non-FH/unparseable rows', () => {
+  const { enrichedRows } = parseDailyCsv(buildDailyCsv(), undefined, SAMPLE_BRAND_MAPPING);
+  assert.equal(enrichedRows.length, 5); // header + 4 passing rows (GH1234567890123 row excluded, non-FH)
+  const header = enrichedRows[0];
+  assert.deepEqual(header.slice(-4), ['分類_媒体', '分類_定期通常', '分類_ブランド', '分類_仕入価格']);
+
+  const day9mctRow = enrichedRows.find(r => r[0] === '26/06/09' && r[3] === 'FH0001010101000');
+  assert.ok(day9mctRow);
+  // 販売区分列は「定期」だが商品名に「定期」を含まないため分類は通常。仕入価格はCSV自身の仕入金額(400)をそのまま使用
+  assert.deepEqual(day9mctRow.slice(-4), ['自社', '通常', 'MCTオイル', 400]);
+
+  assert.equal(enrichedRows.some(r => r[3] === 'GH1234567890123'), false);
 });
 
 test('parseDailyCsv attaches brand from productBrandMapping and reports unmapped product codes', () => {

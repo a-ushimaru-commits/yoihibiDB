@@ -299,6 +299,18 @@
     return rows.filter(r => !(r.length === 1 && r[0] === ''));
   }
 
+  function csvEscapeField(value) {
+    const s = value == null ? '' : String(value);
+    if (/["\r\n,]/.test(s)) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  function rowsToCsv(rows) {
+    return rows.map(row => row.map(csvEscapeField).join(',')).join('\r\n') + '\r\n';
+  }
+
   function parseDailyCsv(csvText, mediaMapping, productBrandMapping, janUnitCosts, productTypeMapping) {
     const rows = parseCsv(csvText);
     const required = ['出荷日', '媒体名', '商品コード', '商品名'];
@@ -324,6 +336,7 @@
     const unmappedProducts = {};
     let totalTrackedSales = 0;
     let janMatchedSales = 0;
+    const enrichedRows = [header.concat(['分類_媒体', '分類_定期通常', '分類_ブランド', '分類_仕入価格'])];
 
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i];
@@ -373,6 +386,8 @@
       totalTrackedSales += sales;
       if (janMatched) janMatchedSales += sales;
 
+      enrichedRows.push(row.concat([mapped.channel, type, brand, cost]));
+
       const key = `${parsedDate.date}|${mapped.channel}|${type}|${brand}`;
       if (!agg.has(key)) {
         agg.set(key, { yearMonth: parsedDate.yearMonth, date: parsedDate.date, channel: mapped.channel, type: String(type), brand, qty: 0, sales: 0, cost: 0, profit: 0 });
@@ -385,7 +400,7 @@
     }
 
     const janCoverageRate = totalTrackedSales === 0 ? null : janMatchedSales / totalTrackedSales;
-    return { records: Array.from(agg.values()), unmappedMedia, unmappedProducts, janCoverageRate };
+    return { records: Array.from(agg.values()), unmappedMedia, unmappedProducts, janCoverageRate, enrichedRows };
   }
 
   const TARGET_MONTH_NAME_TO_NUM = {
@@ -459,5 +474,5 @@
     return 'unknown';
   }
 
-  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode, parseBrandLookup, guessBrandForProductCode, parseTargetsWorkbook };
+  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, rowsToCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode, parseBrandLookup, guessBrandForProductCode, parseTargetsWorkbook };
 });

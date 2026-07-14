@@ -1,5 +1,5 @@
 (function () {
-  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, parseTargetsWorkbook, detectFileType, guessBrandForProductCode } = window.YoiHibi;
+  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, parseTargetsWorkbook, detectFileType, guessBrandForProductCode, rowsToCsv } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
   const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot, getChannelMonthlyPivot, getOwnChannelMonthlySummary } = window.YoiHibi;
   const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML } = window.YoiHibi;
@@ -9,6 +9,7 @@
   let trendQtyChart = null;
   let dailySalesChart = null;
   let dailyQtyChart = null;
+  let lastDailyEnrichedRows = null;
 
   // よい日々目標.xlsx の「6月」列は2026年度（2026-06〜2027-05）の6月を指す。
   // 翌年度分のファイルが来たら更新する。
@@ -66,13 +67,15 @@
         showBrandWarnings(unmappedProducts);
       } else if (type === 'daily') {
         const text = decodeShiftJis(buffer);
-        const { records, unmappedMedia, unmappedProducts, janCoverageRate } = parseDailyCsv(text, store.getState().mediaMapping, store.getState().productBrandMapping, store.getState().janUnitCosts, store.getState().productTypeMapping);
+        const { records, unmappedMedia, unmappedProducts, janCoverageRate, enrichedRows } = parseDailyCsv(text, store.getState().mediaMapping, store.getState().productBrandMapping, store.getState().janUnitCosts, store.getState().productTypeMapping);
         const months = Array.from(new Set(records.map(r => r.yearMonth)));
         months.forEach(ym => store.upsertDailyRecords(ym, records.filter(r => r.yearMonth === ym)));
         showStatus(`日次売上を取込みました（${records.length}件）`);
         showWarnings(unmappedMedia);
         showBrandWarnings(unmappedProducts);
         el('janCostWarning').innerHTML = renderJanCostWarningHTML(janCoverageRate);
+        lastDailyEnrichedRows = enrichedRows;
+        el('downloadEnrichedRow').style.display = '';
       } else {
         showStatus(`ファイル種別を判定できませんでした: ${file.name}`, true);
         return;
@@ -305,9 +308,22 @@
     renderAll();
   }
 
+  function setupDownloadEnrichedButton() {
+    el('downloadEnrichedBtn').addEventListener('click', () => {
+      if (!lastDailyEnrichedRows) return;
+      const csv = String.fromCharCode(0xFEFF) + rowsToCsv(lastDailyEnrichedRows);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '日次売上_分類済み.csv';
+      a.click();
+    });
+  }
+
   function init() {
     setupDropzone();
     setupSettingsPanel();
+    setupDownloadEnrichedButton();
     el('monthSelect').addEventListener('change', renderAll);
     refreshMonthOptions();
     renderAll();
