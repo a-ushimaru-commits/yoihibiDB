@@ -180,11 +180,12 @@
     const data = {
       labels: trend.map(t => t.yearMonth),
       datasets: [
+        // 売上=実線、数量=点線で指標の種類を区別。2期売上=青、1期売上=水色で年度を区別
         { label: '2期 売上', data: trend.map(t => t.currentSales), borderColor: '#1a73e8', fill: false, yAxisID: 'y' },
-        { label: '1期 売上', data: trend.map(t => t.baseSales), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'y' },
+        { label: '1期 売上', data: trend.map(t => t.baseSales), borderColor: '#4fc3f7', fill: false, yAxisID: 'y' },
         // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
-        { label: '定期数', data: trend.map(t => t.teikiQty), borderColor: '#4285f4', fill: false, yAxisID: 'qty' },
-        { label: '通常数', data: trend.map(t => t.tsujoQty), borderColor: '#188038', fill: false, yAxisID: 'qty' },
+        { label: '定期数', data: trend.map(t => t.teikiQty), borderColor: '#4285f4', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
+        { label: '通常数', data: trend.map(t => t.tsujoQty), borderColor: '#188038', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
       ],
     };
     if (trendChart) { trendChart.data = data; trendChart.options = QTY_AXIS_OPTIONS; trendChart.update(); return; }
@@ -196,11 +197,12 @@
     const data = {
       labels: series.map(s => s.day),
       datasets: [
+        // 売上=実線、数量=点線で指標の種類を区別。当月(2期)=青、1期同月ペース=水色で年度を区別
         { label: '当月累積売上', data: series.map(s => s.actualSales), borderColor: '#1a73e8', fill: false, yAxisID: 'y' },
-        { label: '1期同月ペース', data: series.map(s => s.paceSales), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'y' },
+        { label: '1期同月ペース', data: series.map(s => s.paceSales), borderColor: '#4fc3f7', fill: false, yAxisID: 'y' },
         // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
-        { label: '定期数（累積）', data: series.map(s => s.actualTeikiQty), borderColor: '#4285f4', fill: false, yAxisID: 'qty' },
-        { label: '通常数（累積）', data: series.map(s => s.actualTsujoQty), borderColor: '#188038', fill: false, yAxisID: 'qty' },
+        { label: '定期数（累積）', data: series.map(s => s.actualTeikiQty), borderColor: '#4285f4', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
+        { label: '通常数（累積）', data: series.map(s => s.actualTsujoQty), borderColor: '#188038', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
       ],
     };
     if (dailyChart) { dailyChart.data = data; dailyChart.options = QTY_AXIS_OPTIONS; dailyChart.update(); return; }
