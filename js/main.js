@@ -183,7 +183,7 @@
     renderDailyQtyChart(getDailyCumulativeSeries(state, yearMonth));
   }
 
-  const CHART_OPTIONS = { responsive: true };
+  const CHART_OPTIONS = { responsive: true, maintainAspectRatio: false };
 
   function renderTrendSalesChart(trend) {
     const ctx = el('trendSalesChart').getContext('2d');
