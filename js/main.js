@@ -5,8 +5,10 @@
   const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML } = window.YoiHibi;
 
   const store = createStore(window.localStorage);
-  let trendChart = null;
-  let dailyChart = null;
+  let trendSalesChart = null;
+  let trendQtyChart = null;
+  let dailySalesChart = null;
+  let dailyQtyChart = null;
 
   // よい日々目標.xlsx の「6月」列は2026年度（2026-06〜2027-05）の6月を指す。
   // 翌年度分のファイルが来たら更新する。
@@ -163,56 +165,74 @@
     el('brandMonthlyPivot').innerHTML = renderBrandMonthlyPivotHTML(getBrandMonthlyPivot(state));
     el('channelMonthlyPivot').innerHTML = renderChannelMonthlyPivotHTML(getChannelMonthlyPivot(state));
 
-    renderTrendChart(getMonthlyTrend(state));
-    renderDailyChart(getDailyCumulativeSeries(state, yearMonth));
+    renderTrendSalesChart(getMonthlyTrend(state));
+    renderTrendQtyChart(getMonthlyTrend(state));
+    renderDailySalesChart(getDailyCumulativeSeries(state, yearMonth));
+    renderDailyQtyChart(getDailyCumulativeSeries(state, yearMonth));
   }
 
-  const QTY_AXIS_OPTIONS = {
-    responsive: true,
-    scales: {
-      y: { type: 'linear', position: 'left' },
-      qty: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } },
-    },
-  };
+  const CHART_OPTIONS = { responsive: true };
 
-  function renderTrendChart(trend) {
-    const ctx = el('trendChart').getContext('2d');
+  function renderTrendSalesChart(trend) {
+    const ctx = el('trendSalesChart').getContext('2d');
     const data = {
       labels: trend.map(t => t.yearMonth),
       datasets: [
-        // 売上=実線、数量=点線で指標の種類を区別。2期売上=青、1期売上=水色で年度を区別
-        { label: '2期 売上', data: trend.map(t => t.currentSales), borderColor: '#1a73e8', fill: false, yAxisID: 'y' },
-        { label: '1期 売上', data: trend.map(t => t.baseSales), borderColor: '#4fc3f7', fill: false, yAxisID: 'y' },
-        // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
-        { label: '定期数', data: trend.map(t => t.teikiQty), borderColor: '#4285f4', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
-        { label: '通常数', data: trend.map(t => t.tsujoQty), borderColor: '#188038', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
-        // 1期定期数=グレー点線、1期通常数=黄緑点線
-        { label: '1期 定期数', data: trend.map(t => t.baseTeikiQty), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
-        { label: '1期 通常数', data: trend.map(t => t.baseTsujoQty), borderColor: '#c0ca33', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
+        // 2期売上=青、1期売上=水色で年度を区別
+        { label: '2期 売上', data: trend.map(t => t.currentSales), borderColor: '#1a73e8', fill: false },
+        { label: '1期 売上', data: trend.map(t => t.baseSales), borderColor: '#4fc3f7', fill: false },
       ],
     };
-    if (trendChart) { trendChart.data = data; trendChart.options = QTY_AXIS_OPTIONS; trendChart.update(); return; }
-    trendChart = new Chart(ctx, { type: 'line', data, options: QTY_AXIS_OPTIONS });
+    if (trendSalesChart) { trendSalesChart.data = data; trendSalesChart.update(); return; }
+    trendSalesChart = new Chart(ctx, { type: 'line', data, options: CHART_OPTIONS });
   }
 
-  function renderDailyChart(series) {
-    const ctx = el('dailyChart').getContext('2d');
+  function renderTrendQtyChart(trend) {
+    const ctx = el('trendQtyChart').getContext('2d');
+    const data = {
+      labels: trend.map(t => t.yearMonth),
+      datasets: [
+        // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
+        { label: '定期数', data: trend.map(t => t.teikiQty), borderColor: '#4285f4', fill: false },
+        { label: '通常数', data: trend.map(t => t.tsujoQty), borderColor: '#188038', fill: false },
+        // 1期定期数=グレー点線、1期通常数=黄緑点線
+        { label: '1期 定期数', data: trend.map(t => t.baseTeikiQty), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false },
+        { label: '1期 通常数', data: trend.map(t => t.baseTsujoQty), borderColor: '#c0ca33', borderDash: [6, 4], fill: false },
+      ],
+    };
+    if (trendQtyChart) { trendQtyChart.data = data; trendQtyChart.update(); return; }
+    trendQtyChart = new Chart(ctx, { type: 'line', data, options: CHART_OPTIONS });
+  }
+
+  function renderDailySalesChart(series) {
+    const ctx = el('dailySalesChart').getContext('2d');
     const data = {
       labels: series.map(s => s.day),
       datasets: [
-        // 売上=実線、数量=点線で指標の種類を区別。当月(2期)=青、1期同月ペース=水色で年度を区別
-        { label: '当月累積売上', data: series.map(s => s.actualSales), borderColor: '#1a73e8', fill: false, yAxisID: 'y' },
-        { label: '1期同月ペース', data: series.map(s => s.paceSales), borderColor: '#4fc3f7', fill: false, yAxisID: 'y' },
-        // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
-        { label: '定期数（累積）', data: series.map(s => s.actualTeikiQty), borderColor: '#4285f4', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
-        { label: '通常数（累積）', data: series.map(s => s.actualTsujoQty), borderColor: '#188038', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
-        // 1期定期数=グレー点線、1期通常数=黄緑点線
-        { label: '1期 定期数（ペース）', data: series.map(s => s.paceTeikiQty), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
-        { label: '1期 通常数（ペース）', data: series.map(s => s.paceTsujoQty), borderColor: '#c0ca33', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
+        // 当月(2期)=青、1期同月ペース=水色で年度を区別
+        { label: '当月累積売上', data: series.map(s => s.actualSales), borderColor: '#1a73e8', fill: false },
+        { label: '1期同月ペース', data: series.map(s => s.paceSales), borderColor: '#4fc3f7', fill: false },
       ],
     };
-    if (dailyChart) { dailyChart.data = data; dailyChart.options = QTY_AXIS_OPTIONS; dailyChart.update(); return; }
-    dailyChart = new Chart(ctx, { type: 'line', data, options: QTY_AXIS_OPTIONS });
+    if (dailySalesChart) { dailySalesChart.data = data; dailySalesChart.update(); return; }
+    dailySalesChart = new Chart(ctx, { type: 'line', data, options: CHART_OPTIONS });
+  }
+
+  function renderDailyQtyChart(series) {
+    const ctx = el('dailyQtyChart').getContext('2d');
+    const data = {
+      labels: series.map(s => s.day),
+      datasets: [
+        // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
+        { label: '定期数（累積）', data: series.map(s => s.actualTeikiQty), borderColor: '#4285f4', fill: false },
+        { label: '通常数（累積）', data: series.map(s => s.actualTsujoQty), borderColor: '#188038', fill: false },
+        // 1期定期数=グレー点線、1期通常数=黄緑点線
+        { label: '1期 定期数（ペース）', data: series.map(s => s.paceTeikiQty), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false },
+        { label: '1期 通常数（ペース）', data: series.map(s => s.paceTsujoQty), borderColor: '#c0ca33', borderDash: [6, 4], fill: false },
+      ],
+    };
+    if (dailyQtyChart) { dailyQtyChart.data = data; dailyQtyChart.update(); return; }
+    dailyQtyChart = new Chart(ctx, { type: 'line', data, options: CHART_OPTIONS });
   }
 
   function setupDropzone() {
