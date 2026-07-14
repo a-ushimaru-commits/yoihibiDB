@@ -20,7 +20,9 @@ h1 { font-size: 22px; margin: 0; }
 .kpi-sub { font-size: 18px; color: #202124; }
 .kpi-num-positive { color: #d93025; }
 .kpi-num-negative { color: #1a73e8; }
-.kpi-ring-wrap { position: relative; width: 88px; height: 88px; margin: 8px 0; }
+.kpi-card-body { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.kpi-card-text { flex: 1; min-width: 0; }
+.kpi-ring-wrap { position: relative; width: 88px; height: 88px; flex: 0 0 auto; }
 .kpi-ring { transform: rotate(-90deg); }
 .kpi-ring-bg { fill: none; stroke: #e8eaed; stroke-width: 10; }
 .kpi-ring-fg { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.3s ease; }
