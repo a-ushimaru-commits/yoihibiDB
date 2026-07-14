@@ -403,6 +403,16 @@
     return { records: Array.from(agg.values()), unmappedMedia, unmappedProducts, janCoverageRate, enrichedRows };
   }
 
+  function filterEnrichedRowsByYearMonth(enrichedRows, yearMonth) {
+    const header = enrichedRows[0];
+    const shipDateIdx = header.indexOf('出荷日');
+    const filtered = enrichedRows.slice(1).filter(row => {
+      const parsed = parseShippingDate(row[shipDateIdx]);
+      return parsed && parsed.yearMonth === yearMonth;
+    });
+    return [header].concat(filtered);
+  }
+
   const TARGET_MONTH_NAME_TO_NUM = {
     '6月': 6, '7月': 7, '8月': 8, '9月': 9, '10月': 10, '11月': 11,
     '12月': 12, '1月': 1, '2月': 2, '3月': 3, '4月': 4, '5月': 5,
@@ -474,5 +484,5 @@
     return 'unknown';
   }
 
-  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, rowsToCsv, parseDailyCsv, detectFileType, isYoiHibiProductCode, parseBrandLookup, guessBrandForProductCode, parseTargetsWorkbook };
+  return { findHeaderRowIndex, parseBaseWorkbook, parseShippingDate, parseMonthlyWorkbook, parseCsv, rowsToCsv, parseDailyCsv, filterEnrichedRowsByYearMonth, detectFileType, isYoiHibiProductCode, parseBrandLookup, guessBrandForProductCode, parseTargetsWorkbook };
 });

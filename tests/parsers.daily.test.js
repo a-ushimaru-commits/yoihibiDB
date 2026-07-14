@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseCsv, parseDailyCsv, rowsToCsv } = require('../js/parsers.js');
+const { parseCsv, parseDailyCsv, rowsToCsv, filterEnrichedRowsByYearMonth } = require('../js/parsers.js');
 
 test('parseCsv handles plain comma-separated rows', () => {
   const rows = parseCsv('a,b,c\n1,2,3\n');
@@ -190,4 +190,26 @@ test('parseDailyCsv sums 数量 into each aggregated record\'s qty field', () =>
   const { records } = parseDailyCsv(buildDailyCsvWithJan());
   const matched = records.find(r => r.sales === 5880);
   assert.equal(matched.qty, 1);
+});
+
+test('filterEnrichedRowsByYearMonth keeps the header row and only data rows whose 出荷日 falls within the given year-month', () => {
+  const csv = [
+    '出荷日,媒体名,商品コード,商品名,金額,仕入金額,粗利額',
+    '26/06/30,よい日々,FH0001010101000,テスト商品/1kg,1000,400,600',
+    '26/07/01,よい日々,FH0002020202000,テスト商品2/1kg,2000,800,1200',
+    '26/07/15,よい日々,FH0003030303000,テスト商品3/1kg,3000,1200,1800',
+  ].join('\n') + '\n';
+  const { enrichedRows } = parseDailyCsv(csv);
+
+  const june = filterEnrichedRowsByYearMonth(enrichedRows, '2026-06');
+  assert.equal(june.length, 2); // header + 1 June row
+  assert.equal(june[0], enrichedRows[0]);
+  assert.equal(june[1][0], '26/06/30');
+
+  const july = filterEnrichedRowsByYearMonth(enrichedRows, '2026-07');
+  assert.equal(july.length, 3); // header + 2 July rows
+  assert.deepEqual(july.slice(1).map(r => r[0]), ['26/07/01', '26/07/15']);
+
+  const august = filterEnrichedRowsByYearMonth(enrichedRows, '2026-08');
+  assert.deepEqual(august, [enrichedRows[0]]); // no matches -> header only
 });

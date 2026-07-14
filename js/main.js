@@ -1,5 +1,5 @@
 (function () {
-  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, parseTargetsWorkbook, detectFileType, guessBrandForProductCode, rowsToCsv } = window.YoiHibi;
+  const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, parseTargetsWorkbook, detectFileType, guessBrandForProductCode, rowsToCsv, filterEnrichedRowsByYearMonth } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
   const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot, getChannelMonthlyPivot, getOwnChannelMonthlySummary } = window.YoiHibi;
   const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML } = window.YoiHibi;
@@ -317,11 +317,13 @@
     el('downloadEnrichedBtn').addEventListener('click', () => {
       const rows = store.getState().lastDailyEnrichedRows;
       if (!rows) return;
-      const csv = String.fromCharCode(0xFEFF) + rowsToCsv(rows);
+      const yearMonth = el('monthSelect').value;
+      const filteredRows = filterEnrichedRowsByYearMonth(rows, yearMonth);
+      const csv = String.fromCharCode(0xFEFF) + rowsToCsv(filteredRows);
       const blob = new Blob([csv], { type: 'text/csv' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = '日次売上_分類済み.csv';
+      a.download = `日次売上_分類済み_${yearMonth}.csv`;
       a.click();
     });
   }
