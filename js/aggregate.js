@@ -316,7 +316,10 @@
       }
     });
     const baseMonth = shiftYearMonth(yearMonth, -1);
-    const baseTotals = sumRecords(filterRecords(state.baseRecords, { yearMonth: baseMonth }));
+    const baseMonthRecords = filterRecords(state.baseRecords, { yearMonth: baseMonth });
+    const baseTotals = sumRecords(baseMonthRecords);
+    const baseTeikiTotals = sumRecords(filterRecords(baseMonthRecords, { type: '定期' }));
+    const baseTsujoTotals = sumRecords(filterRecords(baseMonthRecords, { type: '通常' }));
 
     const series = [];
     let cumSales = 0, cumProfit = 0, cumTeikiQty = 0, cumTsujoQty = 0;
@@ -333,6 +336,8 @@
         actualTsujoQty: cumTsujoQty,
         paceSales: baseTotals.sales * ((d + 1) / nDays),
         paceProfit: baseTotals.profit * ((d + 1) / nDays),
+        paceTeikiQty: baseTeikiTotals.qty * ((d + 1) / nDays),
+        paceTsujoQty: baseTsujoTotals.qty * ((d + 1) / nDays),
       });
     }
     return series;
@@ -350,6 +355,8 @@
       const baseMonth = shiftYearMonth(yearMonth, -1);
       const baseRecordsForMonth = filterRecords(state.baseRecords, { yearMonth: baseMonth });
       const base = sumRecords(baseRecordsForMonth);
+      const baseTeiki = sumRecords(filterRecords(baseRecordsForMonth, { type: '定期' }));
+      const baseTsujo = sumRecords(filterRecords(baseRecordsForMonth, { type: '通常' }));
       const hasBaseData = baseRecordsForMonth.length > 0;
       const target = findTarget(state, yearMonth);
       return {
@@ -361,6 +368,8 @@
         // 1期データが全くない月は「比較不能」を表す null にする（0だと「前年売上ゼロ」と誤読されるため）
         baseSales: hasBaseData ? base.sales : null,
         baseProfit: hasBaseData ? base.profit : null,
+        baseTeikiQty: hasBaseData ? baseTeiki.qty : null,
+        baseTsujoQty: hasBaseData ? baseTsujo.qty : null,
         targetSales: target ? target.salesTarget : null,
         targetProfit: target ? target.profitTarget : null,
       };

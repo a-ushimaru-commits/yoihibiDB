@@ -186,6 +186,9 @@
         // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
         { label: '定期数', data: trend.map(t => t.teikiQty), borderColor: '#4285f4', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
         { label: '通常数', data: trend.map(t => t.tsujoQty), borderColor: '#188038', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
+        // 1期定期数=グレー点線、1期通常数=黄緑点線
+        { label: '1期 定期数', data: trend.map(t => t.baseTeikiQty), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
+        { label: '1期 通常数', data: trend.map(t => t.baseTsujoQty), borderColor: '#c0ca33', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
       ],
     };
     if (trendChart) { trendChart.data = data; trendChart.options = QTY_AXIS_OPTIONS; trendChart.update(); return; }
@@ -203,6 +206,9 @@
         // 定期=青系／通常=緑系は自社月別サマリー・月次推移表と同じ配色（サイト全体の定期/通常カラー規約）
         { label: '定期数（累積）', data: series.map(s => s.actualTeikiQty), borderColor: '#4285f4', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
         { label: '通常数（累積）', data: series.map(s => s.actualTsujoQty), borderColor: '#188038', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
+        // 1期定期数=グレー点線、1期通常数=黄緑点線
+        { label: '1期 定期数（ペース）', data: series.map(s => s.paceTeikiQty), borderColor: '#9aa0a6', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
+        { label: '1期 通常数（ペース）', data: series.map(s => s.paceTsujoQty), borderColor: '#c0ca33', borderDash: [6, 4], fill: false, yAxisID: 'qty' },
       ],
     };
     if (dailyChart) { dailyChart.data = data; dailyChart.options = QTY_AXIS_OPTIONS; dailyChart.update(); return; }

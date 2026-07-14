@@ -70,8 +70,8 @@ test('getElapsedDays degrades to the full month length when there is no data at 
 function sampleState() {
   return {
     baseRecords: [
-      { yearMonth: '2025-06', channel: 'TV', type: '通常', brand: 'MCTオイル', sales: 1000, cost: 400, profit: 600 },
-      { yearMonth: '2025-06', channel: '自社', type: '定期', brand: 'MSMパウダー', sales: 2000, cost: 800, profit: 1200 },
+      { yearMonth: '2025-06', channel: 'TV', type: '通常', brand: 'MCTオイル', qty: 20, sales: 1000, cost: 400, profit: 600 },
+      { yearMonth: '2025-06', channel: '自社', type: '定期', brand: 'MSMパウダー', qty: 30, sales: 2000, cost: 800, profit: 1200 },
     ],
     monthlyRecords: [
       { yearMonth: '2026-06', channel: 'TV', type: '通常', brand: 'MCTオイル', qty: 10, sales: 1200, cost: 480, profit: 720 },
@@ -152,6 +152,13 @@ test('getDailyCumulativeSeries produces one entry per day with actual cumulative
   assert.equal(series[1].paceSales, 200);
 });
 
+test('getDailyCumulativeSeries also prorates 1期の定期数量/通常数量 (paceTeikiQty/paceTsujoQty) from baseRecords', () => {
+  const series = getDailyCumulativeSeries(sampleState(), '2026-06');
+  // base month (2025-06): teikiQty=30 (自社/定期/MSMパウダー), tsujoQty=20 (TV/通常/MCTオイル); day 2 of 30
+  assert.ok(Math.abs(series[1].paceTeikiQty - 30 * 2 / 30) < 1e-9);
+  assert.ok(Math.abs(series[1].paceTsujoQty - 20 * 2 / 30) < 1e-9);
+});
+
 test('getDailyCumulativeSeries also cumulates 定期数量/通常数量 (qty) per day, by type', () => {
   const series = getDailyCumulativeSeries(sampleState(), '2026-06');
   // only 通常/TV daily records exist in the fixture: day1 qty=2, day2 qty=4
@@ -208,6 +215,20 @@ test('getMonthlyTrend also includes 定期数量/通常数量 (qty) split by typ
   const june2026 = trend.find(t => t.yearMonth === '2026-06');
   assert.equal(june2026.teikiQty, 15); // 自社/定期/MSMパウダー
   assert.equal(june2026.tsujoQty, 10); // TV/通常/MCTオイル
+});
+
+test('getMonthlyTrend also includes baseTeikiQty/baseTsujoQty (1期の定期数量/通常数量) for the matching 2期 month', () => {
+  const trend = getMonthlyTrend(sampleState());
+  const june2026 = trend.find(t => t.yearMonth === '2026-06');
+  assert.equal(june2026.baseTeikiQty, 30); // 自社/定期/MSMパウダー in baseRecords 2025-06
+  assert.equal(june2026.baseTsujoQty, 20); // TV/通常/MCTオイル in baseRecords 2025-06
+});
+
+test('getMonthlyTrend reports baseTeikiQty/baseTsujoQty as null (not 0) when there is no 1期 comparison data at all', () => {
+  const trend = getMonthlyTrend(sampleState());
+  const june2025 = trend.find(t => t.yearMonth === '2025-06');
+  assert.equal(june2025.baseTeikiQty, null);
+  assert.equal(june2025.baseTsujoQty, null);
 });
 
 test('getBrandTable returns one row per brand present in the month, sorted by descending sales, with 1期比', () => {
