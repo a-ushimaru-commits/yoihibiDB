@@ -8,7 +8,7 @@
   const STORAGE_KEY = 'yoihibi-dashboard-v1';
 
   function emptyState() {
-    return { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], ownChannelTargets: [], mediaMapping: {}, productBrandMapping: {}, productTypeMapping: {}, janUnitCosts: {} };
+    return { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], ownChannelTargets: [], mediaMapping: {}, productBrandMapping: {}, productTypeMapping: {}, janUnitCosts: {}, lastDailyEnrichedRows: null };
   }
 
   function createStore(backend) {
@@ -42,6 +42,7 @@
       setMediaMapping(mapping) { const s = load(); s.mediaMapping = mapping; save(s); return s; },
       setProductBrandMapping(mapping) { const s = load(); s.productBrandMapping = mapping; save(s); return s; },
       setProductTypeMapping(mapping) { const s = load(); s.productTypeMapping = mapping; save(s); return s; },
+      setLastDailyEnrichedRows(rows) { const s = load(); s.lastDailyEnrichedRows = rows; save(s); return s; },
       upsertJanUnitCosts(costs) {
         const s = load();
         s.janUnitCosts = Object.assign({}, s.janUnitCosts, costs);

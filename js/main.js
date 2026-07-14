@@ -9,7 +9,6 @@
   let trendQtyChart = null;
   let dailySalesChart = null;
   let dailyQtyChart = null;
-  let lastDailyEnrichedRows = null;
 
   // よい日々目標.xlsx の「6月」列は2026年度（2026-06〜2027-05）の6月を指す。
   // 翌年度分のファイルが来たら更新する。
@@ -74,8 +73,8 @@
         showWarnings(unmappedMedia);
         showBrandWarnings(unmappedProducts);
         el('janCostWarning').innerHTML = renderJanCostWarningHTML(janCoverageRate);
-        lastDailyEnrichedRows = enrichedRows;
-        el('downloadEnrichedRow').style.display = '';
+        store.setLastDailyEnrichedRows(enrichedRows);
+        refreshDownloadEnrichedVisibility();
       } else {
         showStatus(`ファイル種別を判定できませんでした: ${file.name}`, true);
         return;
@@ -288,6 +287,7 @@
         refreshMonthOptions();
         el('kpiRow').innerHTML = '';
         el('channelTable').innerHTML = '';
+        refreshDownloadEnrichedVisibility();
       }
     });
     el('salesTargetInput').addEventListener('change', saveTarget);
@@ -308,10 +308,16 @@
     renderAll();
   }
 
+  function refreshDownloadEnrichedVisibility() {
+    const rows = store.getState().lastDailyEnrichedRows;
+    el('downloadEnrichedRow').style.display = rows ? '' : 'none';
+  }
+
   function setupDownloadEnrichedButton() {
     el('downloadEnrichedBtn').addEventListener('click', () => {
-      if (!lastDailyEnrichedRows) return;
-      const csv = String.fromCharCode(0xFEFF) + rowsToCsv(lastDailyEnrichedRows);
+      const rows = store.getState().lastDailyEnrichedRows;
+      if (!rows) return;
+      const csv = String.fromCharCode(0xFEFF) + rowsToCsv(rows);
       const blob = new Blob([csv], { type: 'text/csv' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -324,6 +330,7 @@
     setupDropzone();
     setupSettingsPanel();
     setupDownloadEnrichedButton();
+    refreshDownloadEnrichedVisibility();
     el('monthSelect').addEventListener('change', renderAll);
     refreshMonthOptions();
     renderAll();

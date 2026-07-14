@@ -10,7 +10,7 @@ function fakeBackend() {
 test('getState returns empty structure when nothing stored', () => {
   const store = createStore(fakeBackend());
   const state = store.getState();
-  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], ownChannelTargets: [], mediaMapping: {}, productBrandMapping: {}, productTypeMapping: {}, janUnitCosts: {} });
+  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], ownChannelTargets: [], mediaMapping: {}, productBrandMapping: {}, productTypeMapping: {}, janUnitCosts: {}, lastDailyEnrichedRows: null });
 });
 
 test('setBaseRecords persists and getState reflects it', () => {
@@ -56,6 +56,15 @@ test('setProductTypeMapping replaces the 定期/通常 override section', () => 
   const store = createStore(fakeBackend());
   store.setProductTypeMapping({ 'FH0009999999999': '定期' });
   assert.equal(store.getState().productTypeMapping['FH0009999999999'], '定期');
+});
+
+test('setLastDailyEnrichedRows persists across a fresh createStore call against the same backend (survives reload)', () => {
+  const backend = fakeBackend();
+  const store = createStore(backend);
+  store.setLastDailyEnrichedRows([['header1', 'header2'], ['a', 'b']]);
+
+  const reloadedStore = createStore(backend); // simulates a page reload against the same localStorage
+  assert.deepEqual(reloadedStore.getState().lastDailyEnrichedRows, [['header1', 'header2'], ['a', 'b']]);
 });
 
 test('setOwnChannelTargets replaces the 自社 channel target section independently of setTargets', () => {
