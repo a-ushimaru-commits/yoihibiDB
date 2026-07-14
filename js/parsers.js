@@ -216,7 +216,9 @@
       const mapped = mapping.mapMediaToChannel(row[idx.media], mediaMapping);
       const sales = Number(row[idx.sales]) || 0;
       const cost = Number(row[idx.cost]) || 0;
-      const profit = Number(row[idx.profit]) || 0;
+      // 粗利額列は使わない: 値引が絡む行は割引前の金額を基準に算出されており、値引後の金額合計との
+      // 差分だけ利益を過大表示するため、常に 金額合計-仕入金額 で算出する
+      const profit = sales - cost;
 
       const jan = idx.jan === -1 || row[idx.jan] == null ? '' : String(row[idx.jan]).trim();
       const units = (Number(row[idx.packCount]) || 0) * (Number(row[idx.qty]) || 0);
@@ -329,14 +331,15 @@
       const mapped = mapping.mapMediaToChannel(row[idx.media], mediaMapping);
       const sales = Number(row[idx.sales]) || 0;
       let cost = Number(row[idx.cost]) || 0;
-      let profit = Number(row[idx.profit]) || 0;
 
       const jan = idx.jan === -1 || row[idx.jan] == null ? '' : String(row[idx.jan]).trim();
       const units = (Number(row[idx.packCount]) || 0) * (Number(row[idx.qty]) || 0);
       if (jan && units && Object.prototype.hasOwnProperty.call(janCosts, jan)) {
         cost = janCosts[jan] * units;
-        profit = sales - cost;
       }
+      // 粗利額列は使わない: 値引が絡む行は割引前の金額を基準に算出されており、値引後の金額との
+      // 差分だけ利益を過大表示するため、常に 金額-仕入金額 で算出する
+      const profit = sales - cost;
 
       if (!mapped.mapped) {
         const rawName = (row[idx.media] == null ? '' : String(row[idx.media])).trim();

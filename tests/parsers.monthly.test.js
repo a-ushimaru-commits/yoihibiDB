@@ -175,6 +175,23 @@ test('parseMonthlyWorkbook sums 数量 into each aggregated record\'s qty field'
   assert.equal(rec.qty, 4 + 1 + 3 + 0);
 });
 
+test('parseMonthlyWorkbook computes profit as 金額合計-仕入金額, ignoring 粗利額 when it disagrees (実データでは、値引が絡む行の粗利額は割引前の金額を基準に算出されており、値引後の金額合計との差分だけ過大になる)', () => {
+  const wb = XLSX.utils.book_new();
+  const header = ['出荷日', '媒体名', '販売区分', '商品コード', '商品名', '金額合計', '仕入金額', '粗利額'];
+  const rows = [
+    header,
+    // 実データ検証済みのパターン: 粗利額(104184) は 値引前の金額(158400)-仕入金額(54216) で計算されており、
+    // 値引後の金額合計(142578)との差分(15822、ちょうど値引額と一致)だけ利益を過大表示する
+    ['26/06/09', 'よい日々', '通常', 'FH0009090909000', '謎の割引商品/500ml', 142578, 54216, 104184],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), '売上明細_提出');
+
+  const { records } = parseMonthlyWorkbook(wb);
+  const rec = records.find(r => r.sales === 142578);
+  assert.equal(rec.cost, 54216);
+  assert.equal(rec.profit, 142578 - 54216); // 88362、ファイル自身の粗利額(104184)は使わない
+});
+
 test('parseMonthlyWorkbook throws a clear error when 売上明細_提出 sheet is missing', () => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['x']]), 'Sheet1');

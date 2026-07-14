@@ -119,6 +119,18 @@ test('parseDailyCsv behaves identically when janUnitCosts is omitted (backward c
   assert.deepEqual(withoutArg, withEmptyArg);
 });
 
+test('parseDailyCsv computes profit as 金額-仕入金額 when falling back (no JAN match), ignoring an inflated 粗利額 column value', () => {
+  const csv = [
+    '出荷日,媒体名,商品コード,商品名,金額,仕入金額,粗利額,JANコード,構成数,数量',
+    // 実データ検証済みのパターン: 粗利額(104184)は値引前の金額を基準にしており、値引後の金額(142578)との差分だけ過大
+    '26/07/01,よい日々,FH0009090909000,謎の割引商品/500ml,142578,54216,104184,8888888888888,1,1',
+  ].join('\n') + '\n';
+  const { records } = parseDailyCsv(csv);
+  const rec = records.find(r => r.sales === 142578);
+  assert.equal(rec.cost, 54216);
+  assert.equal(rec.profit, 142578 - 54216); // 88362、ファイル自身の粗利額(104184)は使わない
+});
+
 test('parseDailyCsv sums 数量 into each aggregated record\'s qty field', () => {
   const { records } = parseDailyCsv(buildDailyCsvWithJan());
   const matched = records.find(r => r.sales === 5880);
