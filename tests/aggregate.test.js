@@ -358,6 +358,26 @@ test('getBrandMonthlyPivot zero-fills a brand with no data in a given month, per
   assert.deepEqual(june2026.byBrand['未分類'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 10, tsujoProfit: 5 });
 });
 
+test('getBrandMonthlyPivot recodes 1期 (baseRecords) brands not in productBrandMapping to その他, once a mapping is loaded', () => {
+  const state = pivotSampleState();
+  // 分解詳細リストの商品細分に存在するのはMCTオイルだけ、というシナリオ
+  state.productBrandMapping = { 'FH0001': 'MCTオイル' };
+  const pivot = getBrandMonthlyPivot(state);
+  assert.ok(pivot.brands.includes('MCTオイル'));
+  assert.ok(!pivot.brands.includes('MSMパウダー')); // 分解詳細リストに無いので その他 に吸収される
+  assert.ok(pivot.brands.includes('その他'));
+  assert.ok(pivot.brands.includes('未分類')); // 2期(monthlyRecords)側は対象外、従来通り
+
+  const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
+  // その他 = MSMパウダー(200/120,通常) + 元々null(50/30,通常) が合算される
+  assert.deepEqual(june2025.byBrand['その他'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 250, tsujoProfit: 150 });
+});
+
+test('getBrandMonthlyPivot leaves 1期 (baseRecords) brands untouched when productBrandMapping is empty (not yet loaded)', () => {
+  const pivot = getBrandMonthlyPivot(pivotSampleState()); // productBrandMapping: {}
+  assert.deepEqual(pivot.brands, ['MCTオイル', 'MSMパウダー', '未分類']); // unchanged from the existing behavior
+});
+
 test('getBrandMonthlyPivot returns empty months/brands/rows when both record sets are empty', () => {
   const pivot = getBrandMonthlyPivot({ baseRecords: [], monthlyRecords: [] });
   assert.deepEqual(pivot, { months: [], brands: [], rows: [] });

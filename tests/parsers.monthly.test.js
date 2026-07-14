@@ -138,6 +138,32 @@ test('parseMonthlyWorkbook decides 定期/通常 from 商品名 (containing "定
   assert.equal(tsujo.sales, 500 + 200); // the other two, despite one saying 販売区分='定期'
 });
 
+test('parseMonthlyWorkbook uses a manual productTypeMapping override for 定期/通常, taking precedence over the 商品名-based rule', () => {
+  const wb = XLSX.utils.book_new();
+  const header = ['出荷日', '媒体名', '販売区分', '商品コード', '商品名', '金額合計', '仕入金額', '粗利額'];
+  const rows = [
+    header,
+    // 商品名に「定期」を含まないため自動判定なら通常になるが、手動で定期と指定する
+    ['26/06/09', 'よい日々', '通常', 'FH0009090909000', 'サブスクプラン/500ml', 1000, 400, 600],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), '売上明細_提出');
+
+  const { records } = parseMonthlyWorkbook(wb, undefined, undefined, { 'FH0009090909000': '定期' });
+  const rec = records.find(r => r.sales === 1000);
+  assert.equal(rec.type, '定期');
+});
+
+test('parseMonthlyWorkbook falls back to 商品名-based detection when productTypeMapping has no entry for that code', () => {
+  const wb = XLSX.utils.book_new();
+  const header = ['出荷日', '媒体名', '販売区分', '商品コード', '商品名', '金額合計', '仕入金額', '粗利額'];
+  const rows = [header, ['26/06/09', 'よい日々', '通常', 'FH0009090909000', '【定期】商品', 1000, 400, 600]];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), '売上明細_提出');
+
+  const { records } = parseMonthlyWorkbook(wb, undefined, undefined, {});
+  const rec = records.find(r => r.sales === 1000);
+  assert.equal(rec.type, '定期');
+});
+
 function buildMonthlyWorkbookWithJan() {
   const header = ['出荷日', '媒体名', '販売区分', '商品コード', '商品名', '金額合計', '仕入金額', '粗利額', 'JANコード', '構成数', '数量'];
   const rows = [

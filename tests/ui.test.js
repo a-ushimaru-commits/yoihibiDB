@@ -156,6 +156,14 @@ test('renderProductBrandWarningsHTML pre-selects a guessed brand in the <select>
   assert.match(html, /<option value="MCTオイル">MCTオイル<\/option>/); // the non-guessed option has no selected attribute
 });
 
+test('renderProductBrandWarningsHTML also renders a 定期/通常 override <select> per code, defaulting to 自動判定 (no override)', () => {
+  const html = renderProductBrandWarningsHTML({ 'FH0009999999999': { count: 3, sales: 4500 } });
+  assert.match(html, /<select data-product-code-type="FH0009999999999">/);
+  assert.match(html, /<option value="">自動判定<\/option>/);
+  assert.match(html, /<option value="定期">定期<\/option>/);
+  assert.match(html, /<option value="通常">通常<\/option>/);
+});
+
 test('heatmapColor returns no color for a zero value or a zero column max, and a green/red hsl scale otherwise', () => {
   assert.equal(heatmapColor(0, 100), '');
   assert.equal(heatmapColor(50, 0), '');

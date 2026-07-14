@@ -10,7 +10,7 @@ function fakeBackend() {
 test('getState returns empty structure when nothing stored', () => {
   const store = createStore(fakeBackend());
   const state = store.getState();
-  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], ownChannelTargets: [], mediaMapping: {}, productBrandMapping: {}, janUnitCosts: {} });
+  assert.deepEqual(state, { baseRecords: [], monthlyRecords: [], dailyRecords: [], targets: [], ownChannelTargets: [], mediaMapping: {}, productBrandMapping: {}, productTypeMapping: {}, janUnitCosts: {} });
 });
 
 test('setBaseRecords persists and getState reflects it', () => {
@@ -50,6 +50,12 @@ test('setTargets, setMediaMapping, and setProductBrandMapping replace their sect
   assert.equal(state.targets[0].salesTarget, 1000000);
   assert.equal(state.mediaMapping['新媒体'], 'TV');
   assert.equal(state.productBrandMapping['FH0009999999999'], 'MCTオイル');
+});
+
+test('setProductTypeMapping replaces the 定期/通常 override section', () => {
+  const store = createStore(fakeBackend());
+  store.setProductTypeMapping({ 'FH0009999999999': '定期' });
+  assert.equal(store.getState().productTypeMapping['FH0009999999999'], '定期');
 });
 
 test('setOwnChannelTargets replaces the 自社 channel target section independently of setTargets', () => {

@@ -132,9 +132,17 @@
   }
 
   function collectPivotRecords(state) {
+    // 1期(baseRecords)のブランド値は、分解詳細リスト（productBrandMapping）の商品細分に
+    // 存在するものだけを残し、それ以外はすべて「その他」に正規化する。
+    // マッピング未取込み（空）の間は従来通り何もしない。
+    const validBrands = new Set(Object.values(state.productBrandMapping || {}));
+    const baseRecords = state.baseRecords || [];
+    const normalizedBaseRecords = validBrands.size === 0 ? baseRecords : baseRecords.map(r => (
+      r.brand != null && validBrands.has(r.brand) ? r : Object.assign({}, r, { brand: 'その他' })
+    ));
     const monthlyMonths = new Set((state.monthlyRecords || []).map(r => r.yearMonth));
     const dailyFallback = (state.dailyRecords || []).filter(r => !monthlyMonths.has(r.yearMonth));
-    return (state.baseRecords || []).concat(state.monthlyRecords || []).concat(dailyFallback);
+    return normalizedBaseRecords.concat(state.monthlyRecords || []).concat(dailyFallback);
   }
 
   function getBrandMonthlyPivot(state, filter) {

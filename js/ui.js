@@ -114,17 +114,26 @@
           </select>
           <input type="text" data-product-code-new="${code}" placeholder="新しいブランド名" style="display:none">`
         : `<input type="text" data-product-code="${code}" placeholder="ブランド名">`;
+      const typeCell = `<select data-product-code-type="${code}">
+            <option value="">自動判定</option>
+            <option value="定期">定期</option>
+            <option value="通常">通常</option>
+          </select>`;
       return `<tr>
         <td>${code}</td>
         <td>${info.productName || ''}</td>
         <td>${info.count}件, ${formatYen(info.sales)}</td>
         <td>${assignCell}</td>
+        <td>${typeCell}</td>
       </tr>`;
     }).join('');
     return `<div class="brand-warning">
-      <p>ブランド未分類の商品コードがあります。ブランド名を指定して保存してください（保存後、対象月のファイルを再取込みすると反映されます）:</p>
+      <p>ブランド未分類の商品コードがあります。ブランド名と、必要であれば定期/通常の区分も指定して保存してください（保存後、対象月のファイルを再取込みすると反映されます）:</p>
       <form id="brandAssignForm">
-        <table>${rows}</table>
+        <table>
+          <thead><tr><th>商品コード</th><th>商品名</th><th>件数/売上</th><th>ブランド</th><th>定期/通常</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
         <button type="submit">割り当てを保存</button>
       </form>
     </div>`;

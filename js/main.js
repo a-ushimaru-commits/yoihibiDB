@@ -57,7 +57,7 @@
         store.setOwnChannelTargets(store.getState().ownChannelTargets.filter(t => !parsedOwnMonths.has(t.yearMonth)).concat(parsedOwnChannelTargets));
         showStatus(`年間目標を取込みました（${parsedTargets.length}ヶ月分）`);
       } else if (type === 'monthly') {
-        const { records, unmappedMedia, unmappedProducts, janUnitCosts } = parseMonthlyWorkbook(workbook, store.getState().mediaMapping, store.getState().productBrandMapping);
+        const { records, unmappedMedia, unmappedProducts, janUnitCosts } = parseMonthlyWorkbook(workbook, store.getState().mediaMapping, store.getState().productBrandMapping, store.getState().productTypeMapping);
         const months = Array.from(new Set(records.map(r => r.yearMonth)));
         months.forEach(ym => store.upsertMonthlyRecords(ym, records.filter(r => r.yearMonth === ym)));
         store.upsertJanUnitCosts(janUnitCosts);
@@ -66,7 +66,7 @@
         showBrandWarnings(unmappedProducts);
       } else if (type === 'daily') {
         const text = decodeShiftJis(buffer);
-        const { records, unmappedMedia, unmappedProducts, janCoverageRate } = parseDailyCsv(text, store.getState().mediaMapping, store.getState().productBrandMapping, store.getState().janUnitCosts);
+        const { records, unmappedMedia, unmappedProducts, janCoverageRate } = parseDailyCsv(text, store.getState().mediaMapping, store.getState().productBrandMapping, store.getState().janUnitCosts, store.getState().productTypeMapping);
         const months = Array.from(new Set(records.map(r => r.yearMonth)));
         months.forEach(ym => store.upsertDailyRecords(ym, records.filter(r => r.yearMonth === ym)));
         showStatus(`日次売上を取込みました（${records.length}件）`);
@@ -131,10 +131,22 @@
         }
         if (value) overrides[code] = value;
       });
-      if (Object.keys(overrides).length === 0) return;
-      const merged = Object.assign({}, store.getState().productBrandMapping, overrides);
-      store.setProductBrandMapping(merged);
-      showStatus('ブランドの割り当てを保存しました。対象月の月次実績／日次売上ファイルを再取込みすると反映されます。');
+      const typeOverrides = {};
+      form.querySelectorAll('[data-product-code-type]').forEach(field => {
+        const code = field.getAttribute('data-product-code-type');
+        const value = field.value.trim();
+        if (value) typeOverrides[code] = value;
+      });
+      const hasBrandOverrides = Object.keys(overrides).length > 0;
+      const hasTypeOverrides = Object.keys(typeOverrides).length > 0;
+      if (!hasBrandOverrides && !hasTypeOverrides) return;
+      if (hasBrandOverrides) {
+        store.setProductBrandMapping(Object.assign({}, store.getState().productBrandMapping, overrides));
+      }
+      if (hasTypeOverrides) {
+        store.setProductTypeMapping(Object.assign({}, store.getState().productTypeMapping, typeOverrides));
+      }
+      showStatus('ブランド／定期・通常区分の割り当てを保存しました。対象月の月次実績／日次売上ファイルを再取込みすると反映されます。');
       el('brandWarnings').innerHTML = '';
     });
   }

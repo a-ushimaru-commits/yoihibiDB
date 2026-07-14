@@ -87,6 +87,18 @@ test('parseDailyCsv decides 定期/通常 from 商品名 (containing "定期"), 
   assert.equal(tsujo.sales, 500 + 200); // the other two, despite one saying 販売区分='定期'
 });
 
+test('parseDailyCsv uses a manual productTypeMapping override (5th arg) for 定期/通常, taking precedence over the 商品名-based rule', () => {
+  const csv = [
+    '出荷日,媒体名,販売区分,商品コード,商品名,金額,仕入金額,粗利額',
+    // 商品名に「定期」を含まないため自動判定なら通常になるが、手動で定期と指定する
+    '26/06/09,よい日々,通常,FH0009090909000,サブスクプラン/500ml,1000,400,600',
+  ].join('\n') + '\n';
+
+  const { records } = parseDailyCsv(csv, undefined, undefined, undefined, { 'FH0009090909000': '定期' });
+  const rec = records.find(r => r.sales === 1000);
+  assert.equal(rec.type, '定期');
+});
+
 function buildDailyCsvWithJan() {
   const header = '出荷日,媒体名,商品コード,商品名,金額,仕入金額,粗利額,JANコード,構成数,数量';
   const lines = [

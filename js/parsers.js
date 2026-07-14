@@ -179,7 +179,7 @@
     return brandMap[bestKey];
   }
 
-  function parseMonthlyWorkbook(workbook, mediaMapping, productBrandMapping) {
+  function parseMonthlyWorkbook(workbook, mediaMapping, productBrandMapping, productTypeMapping) {
     const rows = sheetToRows(workbook, '売上明細_提出');
     if (!rows) {
       throw new Error('シート「売上明細_提出」が見つかりません。月次実績ファイルを確認してください。');
@@ -200,6 +200,7 @@
 
     const mapping = mappingLib;
     const brandMap = productBrandMapping || {};
+    const typeMap = productTypeMapping || {};
     const agg = new Map();
     const unmappedMedia = {};
     const unmappedProducts = {};
@@ -238,9 +239,10 @@
       if (mapped.channel === null) continue;
 
       const productName = row[idx.productName] == null ? '' : String(row[idx.productName]).trim();
-      const type = typeFromProductName(productName);
-
       const productCode = normalizeProductCode(row[idx.productCode]);
+      const hasTypeOverride = Object.prototype.hasOwnProperty.call(typeMap, productCode);
+      const type = hasTypeOverride ? typeMap[productCode] : typeFromProductName(productName);
+
       const hasBrand = Object.prototype.hasOwnProperty.call(brandMap, productCode);
       const brand = hasBrand ? brandMap[productCode] : '未分類';
       if (!hasBrand) {
@@ -297,7 +299,7 @@
     return rows.filter(r => !(r.length === 1 && r[0] === ''));
   }
 
-  function parseDailyCsv(csvText, mediaMapping, productBrandMapping, janUnitCosts) {
+  function parseDailyCsv(csvText, mediaMapping, productBrandMapping, janUnitCosts, productTypeMapping) {
     const rows = parseCsv(csvText);
     const required = ['出荷日', '媒体名', '商品コード', '商品名'];
     const headerIdx = findHeaderRowIndex(rows, required);
@@ -316,6 +318,7 @@
 
     const mapping = mappingLib;
     const brandMap = productBrandMapping || {};
+    const typeMap = productTypeMapping || {};
     const agg = new Map();
     const unmappedMedia = {};
     const unmappedProducts = {};
@@ -353,9 +356,10 @@
       if (mapped.channel === null) continue;
 
       const productName = row[idx.productName] == null ? '' : String(row[idx.productName]).trim();
-      const type = typeFromProductName(productName);
-
       const productCode = normalizeProductCode(row[idx.productCode]);
+      const hasTypeOverride = Object.prototype.hasOwnProperty.call(typeMap, productCode);
+      const type = hasTypeOverride ? typeMap[productCode] : typeFromProductName(productName);
+
       const hasBrand = Object.prototype.hasOwnProperty.call(brandMap, productCode);
       const brand = hasBrand ? brandMap[productCode] : '未分類';
       if (!hasBrand) {
