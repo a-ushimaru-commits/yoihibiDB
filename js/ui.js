@@ -25,12 +25,38 @@
     return `<span class="${cls}">${text}</span>`;
   }
 
+  const KPI_RING_RADIUS = 52;
+  const KPI_RING_CIRCUMFERENCE = 2 * Math.PI * KPI_RING_RADIUS;
+
+  function kpiRingDashOffset(rate) {
+    if (rate == null) return KPI_RING_CIRCUMFERENCE;
+    const pct = Math.max(0, Math.min(1, rate));
+    return KPI_RING_CIRCUMFERENCE * (1 - pct);
+  }
+
+  function kpiRingHTML(rate, color) {
+    const offset = kpiRingDashOffset(rate).toFixed(2);
+    const label = formatPct(rate);
+    return `<div class="kpi-ring-wrap">
+      <svg class="kpi-ring" viewBox="0 0 120 120" width="88" height="88">
+        <circle class="kpi-ring-bg" cx="60" cy="60" r="${KPI_RING_RADIUS}" />
+        <circle class="kpi-ring-fg" cx="60" cy="60" r="${KPI_RING_RADIUS}" stroke="${color}"
+          stroke-dasharray="${KPI_RING_CIRCUMFERENCE.toFixed(2)}" stroke-dashoffset="${offset}" />
+      </svg>
+      <div class="kpi-ring-center">${label}</div>
+    </div>`;
+  }
+
   function renderKpiCardsHTML(c, labelPrefix) {
     const prefix = labelPrefix || '';
+    const isOwnChannel = prefix === '自社';
+    const salesRingColor = isOwnChannel ? '#00897b' : '#1a73e8';
+    const profitRingColor = isOwnChannel ? '#f9a825' : '#8e24aa';
     return `
       <div class="kpi-card">
         <div class="kpi-label">${prefix}売上</div>
         <div class="kpi-value">${formatYen(c.sales)}</div>
+        ${kpiRingHTML(c.salesTargetRateProrated, salesRingColor)}
         <div class="kpi-sub">1期比 ${pctSpan(c.salesYoY)} ／ 前月比 ${pctSpan(c.salesMoM)}</div>
         <div class="kpi-sub">目標達成率（全体） ${pctSpan(c.salesTargetRate)}</div>
         <div class="kpi-sub">目標達成率（日割） ${pctSpan(c.salesTargetRateProrated)}</div>
@@ -38,6 +64,7 @@
       <div class="kpi-card">
         <div class="kpi-label">${prefix}粗利</div>
         <div class="kpi-value">${formatYen(c.profit)}</div>
+        ${kpiRingHTML(c.profitTargetRateProrated, profitRingColor)}
         <div class="kpi-sub">1期比 ${pctSpan(c.profitYoY)} ／ 前月比 ${pctSpan(c.profitMoM)}</div>
         <div class="kpi-sub">目標達成率（全体） ${pctSpan(c.profitTargetRate)}</div>
         <div class="kpi-sub">目標達成率（日割） ${pctSpan(c.profitTargetRateProrated)}</div>
@@ -308,5 +335,5 @@
     </div>`;
   }
 
-  return { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML };
+  return { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML, kpiRingDashOffset };
 });

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML } = require('../js/ui.js');
+const { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML, kpiRingDashOffset } = require('../js/ui.js');
 
 test('formatYen adds yen sign and thousands separators, rounds to integer', () => {
   assert.equal(formatYen(1234567.8), '¥1,234,568');
@@ -75,6 +75,37 @@ test('renderKpiCardsHTML omits the labelPrefix by default (plain 売上/粗利/�
   assert.match(html, /<div class="kpi-label">売上<\/div>/);
   assert.match(html, /<div class="kpi-label">粗利<\/div>/);
   assert.match(html, /<div class="kpi-label">粗利率<\/div>/);
+});
+
+test('kpiRingDashOffset maps a 0-1 rate onto the ring circumference (0=full offset/empty ring, 1=no offset/full ring), and null renders as an empty ring', () => {
+  const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
+  assert.ok(Math.abs(kpiRingDashOffset(null) - RING_CIRCUMFERENCE) < 0.01);
+  assert.ok(Math.abs(kpiRingDashOffset(0) - RING_CIRCUMFERENCE) < 0.01);
+  assert.ok(Math.abs(kpiRingDashOffset(1) - 0) < 0.01);
+  assert.ok(Math.abs(kpiRingDashOffset(0.5) - RING_CIRCUMFERENCE / 2) < 0.01);
+  assert.ok(Math.abs(kpiRingDashOffset(1.5) - 0) < 0.01); // over 100% clamps to a full ring
+});
+
+test('renderKpiCardsHTML renders a 目標達成率（日割）ring gauge with a stroke-dashoffset matching the rate, without removing the existing text figures', () => {
+  const html = renderKpiCardsHTML({
+    sales: 3000000, profit: 1200000, profitRate: 0.4,
+    salesTargetRateProrated: 0.555, profitTargetRateProrated: 0.8,
+  });
+  const expectedSalesOffset = kpiRingDashOffset(0.555).toFixed(2);
+  const expectedProfitOffset = kpiRingDashOffset(0.8).toFixed(2);
+  assert.match(html, new RegExp(`class="kpi-ring-fg"[^>]*stroke-dashoffset="${expectedSalesOffset.replace('.', '\\.')}"`));
+  assert.match(html, new RegExp(`class="kpi-ring-fg"[^>]*stroke-dashoffset="${expectedProfitOffset.replace('.', '\\.')}"`));
+  // existing text figures must still be present (this is an addition, not a replacement)
+  assert.match(html, /目標達成率（日割）/);
+  assert.match(html, /55\.5%/);
+  assert.match(html, /80\.0%/);
+});
+
+test('renderKpiCardsHTML uses distinct ring accent colors for the default (全体) row vs a 自社-prefixed row', () => {
+  const htmlDefault = renderKpiCardsHTML({ sales: 1, profit: 1, profitRate: 0.1, salesTargetRateProrated: 0.5, profitTargetRateProrated: 0.5 });
+  const htmlOwn = renderKpiCardsHTML({ sales: 1, profit: 1, profitRate: 0.1, salesTargetRateProrated: 0.5, profitTargetRateProrated: 0.5 }, '自社');
+  assert.match(htmlDefault, /stroke="#1a73e8"/);
+  assert.match(htmlOwn, /stroke="#00897b"/);
 });
 
 test('renderJanCostWarningHTML shows a warning when less than half of sales are covered by a JAN cost match', () => {
