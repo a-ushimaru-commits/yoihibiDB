@@ -6,16 +6,17 @@
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<h1>よい日々 売上進捗ダッシュボード</h1>
+<div class="page-header-row">
+  <h1>よい日々 売上進捗ダッシュボード</h1>
+  <div class="month-selector">
+    対象月:
+    <select id="monthSelect"></select>
+  </div>
+</div>
 <p id="status"></p>
 <div id="warnings"></div>
 <div id="brandWarnings"></div>
 <div id="janCostWarning"></div>
-
-<div class="month-selector">
-  対象月:
-  <select id="monthSelect"></select>
-</div>
 
 <div class="kpi-row-with-upload">
   <div id="kpiRow" class="kpi-row"></div>
