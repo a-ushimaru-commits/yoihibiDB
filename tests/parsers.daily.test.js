@@ -131,6 +131,24 @@ test('parseDailyCsv computes profit as 金額-仕入金額 when falling back (no
   assert.equal(rec.profit, 142578 - 54216); // 88362、ファイル自身の粗利額(104184)は使わない
 });
 
+test('parseDailyCsv reports janCoverageRate as the share of sales covered by a JAN cost match', () => {
+  const janUnitCosts = { '0061998079829': 2210 };
+  const { janCoverageRate } = parseDailyCsv(buildDailyCsvWithJan(), undefined, undefined, janUnitCosts);
+  // matched row sales=5880, unmatched row sales=1000 -> 5880/6880
+  assert.ok(Math.abs(janCoverageRate - 5880 / 6880) < 1e-9);
+});
+
+test('parseDailyCsv reports janCoverageRate as 0 when no janUnitCosts are available at all', () => {
+  const { janCoverageRate } = parseDailyCsv(buildDailyCsvWithJan());
+  assert.equal(janCoverageRate, 0);
+});
+
+test('parseDailyCsv reports janCoverageRate as null when there are no relevant sales at all', () => {
+  const csv = ['出荷日,媒体名,商品コード,商品名,金額,仕入金額,粗利額', '26/07/01,よい日々,GH1234567890123,他社商品,1000,0,0'].join('\n') + '\n';
+  const { janCoverageRate } = parseDailyCsv(csv);
+  assert.equal(janCoverageRate, null);
+});
+
 test('parseDailyCsv sums 数量 into each aggregated record\'s qty field', () => {
   const { records } = parseDailyCsv(buildDailyCsvWithJan());
   const matched = records.find(r => r.sales === 5880);

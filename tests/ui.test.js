@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML } = require('../js/ui.js');
+const { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML } = require('../js/ui.js');
 
 test('formatYen adds yen sign and thousands separators, rounds to integer', () => {
   assert.equal(formatYen(1234567.8), '¥1,234,568');
@@ -75,6 +75,18 @@ test('renderKpiCardsHTML omits the labelPrefix by default (plain 売上/粗利/�
   assert.match(html, /<div class="kpi-label">売上<\/div>/);
   assert.match(html, /<div class="kpi-label">粗利<\/div>/);
   assert.match(html, /<div class="kpi-label">粗利率<\/div>/);
+});
+
+test('renderJanCostWarningHTML shows a warning when less than half of sales are covered by a JAN cost match', () => {
+  const html = renderJanCostWarningHTML(0.3);
+  assert.match(html, /30%/);
+  assert.match(html, /月次実績ファイル/);
+});
+
+test('renderJanCostWarningHTML is empty when coverage is at/above 50% or null (no relevant sales)', () => {
+  assert.equal(renderJanCostWarningHTML(0.5), '');
+  assert.equal(renderJanCostWarningHTML(1), '');
+  assert.equal(renderJanCostWarningHTML(null), '');
 });
 
 test('renderChannelTableHTML emits one row per channel with sales/profit/profitRate/salesYoY', () => {

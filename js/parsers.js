@@ -319,6 +319,8 @@
     const agg = new Map();
     const unmappedMedia = {};
     const unmappedProducts = {};
+    let totalTrackedSales = 0;
+    let janMatchedSales = 0;
 
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i];
@@ -334,7 +336,8 @@
 
       const jan = idx.jan === -1 || row[idx.jan] == null ? '' : String(row[idx.jan]).trim();
       const units = (Number(row[idx.packCount]) || 0) * (Number(row[idx.qty]) || 0);
-      if (jan && units && Object.prototype.hasOwnProperty.call(janCosts, jan)) {
+      const janMatched = Boolean(jan && units && Object.prototype.hasOwnProperty.call(janCosts, jan));
+      if (janMatched) {
         cost = janCosts[jan] * units;
       }
       // 粗利額列は使わない: 値引が絡む行は割引前の金額を基準に算出されており、値引後の金額との
@@ -363,6 +366,9 @@
         unmappedProducts[productCode].sales += sales;
       }
 
+      totalTrackedSales += sales;
+      if (janMatched) janMatchedSales += sales;
+
       const key = `${parsedDate.date}|${mapped.channel}|${type}|${brand}`;
       if (!agg.has(key)) {
         agg.set(key, { yearMonth: parsedDate.yearMonth, date: parsedDate.date, channel: mapped.channel, type: String(type), brand, qty: 0, sales: 0, cost: 0, profit: 0 });
@@ -374,7 +380,8 @@
       rec.profit += profit;
     }
 
-    return { records: Array.from(agg.values()), unmappedMedia, unmappedProducts };
+    const janCoverageRate = totalTrackedSales === 0 ? null : janMatchedSales / totalTrackedSales;
+    return { records: Array.from(agg.values()), unmappedMedia, unmappedProducts, janCoverageRate };
   }
 
   const TARGET_MONTH_NAME_TO_NUM = {

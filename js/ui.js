@@ -64,6 +64,12 @@
     </table>`;
   }
 
+  function renderJanCostWarningHTML(janCoverageRate) {
+    if (janCoverageRate == null || janCoverageRate >= 0.5) return '';
+    const pct = Math.round(janCoverageRate * 100);
+    return `<div class="jancost-warning"><p>この日次データはJANコード原価が反映された売上が全体の${pct}%にとどまっています。原価が実態と異なる可能性があります。月次実績ファイル（対象月または前月分）を先に取込むと原価の精度が向上します。</p></div>`;
+  }
+
   function renderMappingWarningsHTML(unmappedMedia) {
     const names = Object.keys(unmappedMedia || {});
     if (names.length === 0) return '';
@@ -293,5 +299,5 @@
     </div>`;
   }
 
-  return { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML };
+  return { formatYen, formatPct, formatNumber, renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, heatmapColor, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML };
 });

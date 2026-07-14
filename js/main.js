@@ -2,7 +2,7 @@
   const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, parseTargetsWorkbook, detectFileType, guessBrandForProductCode } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
   const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot, getChannelMonthlyPivot, getOwnChannelMonthlySummary } = window.YoiHibi;
-  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML } = window.YoiHibi;
+  const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML } = window.YoiHibi;
 
   const store = createStore(window.localStorage);
   let trendChart = null;
@@ -64,12 +64,13 @@
         showBrandWarnings(unmappedProducts);
       } else if (type === 'daily') {
         const text = decodeShiftJis(buffer);
-        const { records, unmappedMedia, unmappedProducts } = parseDailyCsv(text, store.getState().mediaMapping, store.getState().productBrandMapping, store.getState().janUnitCosts);
+        const { records, unmappedMedia, unmappedProducts, janCoverageRate } = parseDailyCsv(text, store.getState().mediaMapping, store.getState().productBrandMapping, store.getState().janUnitCosts);
         const months = Array.from(new Set(records.map(r => r.yearMonth)));
         months.forEach(ym => store.upsertDailyRecords(ym, records.filter(r => r.yearMonth === ym)));
         showStatus(`日次売上を取込みました（${records.length}件）`);
         showWarnings(unmappedMedia);
         showBrandWarnings(unmappedProducts);
+        el('janCostWarning').innerHTML = renderJanCostWarningHTML(janCoverageRate);
       } else {
         showStatus(`ファイル種別を判定できませんでした: ${file.name}`, true);
         return;
