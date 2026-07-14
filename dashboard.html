@@ -42,16 +42,23 @@
 <h2>月次推移（媒体×定期/通常）</h2>
 <div id="channelMonthlyPivot"></div>
 
-<h3 class="chart-row-title">売上（月次推移 / 当月累積）</h3>
-<div class="chart-row">
-  <div class="chart-card"><canvas id="trendSalesChart" height="220"></canvas></div>
-  <div class="chart-card"><canvas id="dailySalesChart" height="220"></canvas></div>
-</div>
-
-<h3 class="chart-row-title">数量（定期数・通常数）</h3>
-<div class="chart-row">
-  <div class="chart-card"><canvas id="trendQtyChart" height="220"></canvas></div>
-  <div class="chart-card"><canvas id="dailyQtyChart" height="220"></canvas></div>
+<div class="chart-row chart-row-quad">
+  <div class="chart-card">
+    <p class="chart-card-title">売上（月次推移）</p>
+    <canvas id="trendSalesChart" height="140"></canvas>
+  </div>
+  <div class="chart-card">
+    <p class="chart-card-title">売上（当月累積）</p>
+    <canvas id="dailySalesChart" height="140"></canvas>
+  </div>
+  <div class="chart-card">
+    <p class="chart-card-title">数量（月次推移）</p>
+    <canvas id="trendQtyChart" height="140"></canvas>
+  </div>
+  <div class="chart-card">
+    <p class="chart-card-title">数量（当月累積）</p>
+    <canvas id="dailyQtyChart" height="140"></canvas>
+  </div>
 </div>
 
 <div id="channelTable"></div>
