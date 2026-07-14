@@ -339,11 +339,11 @@
   }
 
   function getMonthlyTrend(state) {
-    const months = Array.from(new Set(
-      state.monthlyRecords.map(r => r.yearMonth).concat((state.dailyRecords || []).map(r => r.yearMonth))
-    )).sort();
+    const allRecords = collectPivotRecords(state);
+    const allMonths = Array.from(new Set(allRecords.map(r => r.yearMonth))).sort();
+    const months = allMonths.slice(-12); // 直近12ヶ月分（1年間）に絞る
     return months.map(yearMonth => {
-      const monthRecords = monthlyOrDailyRecords(state, yearMonth);
+      const monthRecords = filterRecords(allRecords, { yearMonth });
       const current = sumRecords(monthRecords);
       const teiki = sumRecords(filterRecords(monthRecords, { type: '定期' }));
       const tsujo = sumRecords(filterRecords(monthRecords, { type: '通常' }));

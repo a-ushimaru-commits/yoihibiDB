@@ -161,19 +161,43 @@ test('getDailyCumulativeSeries also cumulates 定期数量/通常数量 (qty) pe
   assert.equal(series[1].actualTsujoQty, 6);
 });
 
-test('getMonthlyTrend returns one row per month present in monthlyRecords with base and target', () => {
+test('getMonthlyTrend returns a trailing chronological window including 1期-only (baseRecords) months, with base and target for the matching 2期 month', () => {
   const trend = getMonthlyTrend(sampleState());
-  assert.equal(trend.length, 1);
-  assert.equal(trend[0].yearMonth, '2026-06');
-  assert.equal(trend[0].currentSales, 3000);
-  assert.equal(trend[0].baseSales, 3000);
-  assert.equal(trend[0].targetSales, 3000);
+  assert.deepEqual(trend.map(t => t.yearMonth), ['2025-06', '2026-06']);
+  const june2026 = trend.find(t => t.yearMonth === '2026-06');
+  assert.equal(june2026.currentSales, 3000);
+  assert.equal(june2026.baseSales, 3000);
+  assert.equal(june2026.targetSales, 3000);
+});
+
+test('getMonthlyTrend sources currentSales directly from baseRecords for months that predate any 2期 data', () => {
+  const trend = getMonthlyTrend(sampleState());
+  const june2025 = trend.find(t => t.yearMonth === '2025-06');
+  assert.equal(june2025.currentSales, 3000); // 1000 (TV/通常) + 2000 (自社/定期) from baseRecords itself
+  assert.equal(june2025.baseSales, 0); // no 2024-06 baseRecords exists
+});
+
+test('getMonthlyTrend caps the window at the most recent 12 months even when more history exists', () => {
+  const baseRecords = [];
+  const months = [];
+  let y = 2025, m = 1;
+  for (let i = 0; i < 14; i++) {
+    const ym = `${y}-${String(m).padStart(2, '0')}`;
+    months.push(ym);
+    baseRecords.push({ yearMonth: ym, channel: 'TV', type: '通常', sales: 100, cost: 40, profit: 60, qty: 1 });
+    m++; if (m > 12) { m = 1; y++; }
+  }
+  const state = { baseRecords, monthlyRecords: [], dailyRecords: [], targets: [], mediaMapping: {}, productBrandMapping: {} };
+  const trend = getMonthlyTrend(state);
+  assert.equal(trend.length, 12);
+  assert.deepEqual(trend.map(t => t.yearMonth), months.slice(-12));
 });
 
 test('getMonthlyTrend also includes 定期数量/通常数量 (qty) split by type for the month', () => {
   const trend = getMonthlyTrend(sampleState());
-  assert.equal(trend[0].teikiQty, 15); // 自社/定期/MSMパウダー
-  assert.equal(trend[0].tsujoQty, 10); // TV/通常/MCTオイル
+  const june2026 = trend.find(t => t.yearMonth === '2026-06');
+  assert.equal(june2026.teikiQty, 15); // 自社/定期/MSMパウダー
+  assert.equal(june2026.tsujoQty, 10); // TV/通常/MCTオイル
 });
 
 test('getBrandTable returns one row per brand present in the month, sorted by descending sales, with 1期比', () => {
@@ -246,7 +270,7 @@ test('getBrandTable falls back to daily records for a month with no confirmed mo
 
 test('getMonthlyTrend includes a daily-only month, falling back to its daily aggregate', () => {
   const trend = getMonthlyTrend(dailyOnlyMonthState());
-  assert.deepEqual(trend.map(t => t.yearMonth), ['2026-06', '2026-07']);
+  assert.deepEqual(trend.map(t => t.yearMonth), ['2025-07', '2026-06', '2026-07']);
   const july = trend.find(t => t.yearMonth === '2026-07');
   assert.equal(july.currentSales, 500);
   assert.equal(july.currentProfit, 310);
