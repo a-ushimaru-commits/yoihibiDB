@@ -171,15 +171,15 @@
         const teiki = sumRecords(filterRecords(monthRecords, { brand, type: '定期' }));
         const tsujo = sumRecords(filterRecords(monthRecords, { brand, type: '通常' }));
         byBrand[brand] = {
-          teikiSales: teiki.sales, teikiProfit: teiki.profit,
-          tsujoSales: tsujo.sales, tsujoProfit: tsujo.profit,
+          teikiQty: teiki.qty, teikiSales: teiki.sales, teikiProfit: teiki.profit,
+          tsujoQty: tsujo.qty, tsujoSales: tsujo.sales, tsujoProfit: tsujo.profit,
         };
       });
 
       return {
         yearMonth,
-        totalTeikiSales: totalTeiki.sales, totalTeikiProfit: totalTeiki.profit,
-        totalTsujoSales: totalTsujo.sales, totalTsujoProfit: totalTsujo.profit,
+        totalTeikiQty: totalTeiki.qty, totalTeikiSales: totalTeiki.sales, totalTeikiProfit: totalTeiki.profit,
+        totalTsujoQty: totalTsujo.qty, totalTsujoSales: totalTsujo.sales, totalTsujoProfit: totalTsujo.profit,
         byBrand,
       };
     });
@@ -201,15 +201,15 @@
         const teiki = sumRecords(filterRecords(monthRecords, { channel, type: '定期' }));
         const tsujo = sumRecords(filterRecords(monthRecords, { channel, type: '通常' }));
         byChannel[channel] = {
-          teikiSales: teiki.sales, teikiProfit: teiki.profit,
-          tsujoSales: tsujo.sales, tsujoProfit: tsujo.profit,
+          teikiQty: teiki.qty, teikiSales: teiki.sales, teikiProfit: teiki.profit,
+          tsujoQty: tsujo.qty, tsujoSales: tsujo.sales, tsujoProfit: tsujo.profit,
         };
       });
 
       return {
         yearMonth,
-        totalTeikiSales: totalTeiki.sales, totalTeikiProfit: totalTeiki.profit,
-        totalTsujoSales: totalTsujo.sales, totalTsujoProfit: totalTsujo.profit,
+        totalTeikiQty: totalTeiki.qty, totalTeikiSales: totalTeiki.sales, totalTeikiProfit: totalTeiki.profit,
+        totalTsujoQty: totalTsujo.qty, totalTsujoSales: totalTsujo.sales, totalTsujoProfit: totalTsujo.profit,
         byChannel,
       };
     });

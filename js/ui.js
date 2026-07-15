@@ -195,22 +195,22 @@
     const rows = pivot.rows;
     const maxAbsOf = accessor => Math.max(0, ...rows.map(r => Math.abs(accessor(r))));
     const totalMax = {
-      teikiSales: maxAbsOf(r => r.totalTeikiSales), teikiProfit: maxAbsOf(r => r.totalTeikiProfit),
-      tsujoSales: maxAbsOf(r => r.totalTsujoSales), tsujoProfit: maxAbsOf(r => r.totalTsujoProfit),
+      teikiQty: maxAbsOf(r => r.totalTeikiQty), teikiSales: maxAbsOf(r => r.totalTeikiSales), teikiProfit: maxAbsOf(r => r.totalTeikiProfit),
+      tsujoQty: maxAbsOf(r => r.totalTsujoQty), tsujoSales: maxAbsOf(r => r.totalTsujoSales), tsujoProfit: maxAbsOf(r => r.totalTsujoProfit),
     };
     const brandMax = {};
     pivot.brands.forEach(b => {
       brandMax[b] = {
-        teikiSales: maxAbsOf(r => r.byBrand[b].teikiSales), teikiProfit: maxAbsOf(r => r.byBrand[b].teikiProfit),
-        tsujoSales: maxAbsOf(r => r.byBrand[b].tsujoSales), tsujoProfit: maxAbsOf(r => r.byBrand[b].tsujoProfit),
+        teikiQty: maxAbsOf(r => r.byBrand[b].teikiQty), teikiSales: maxAbsOf(r => r.byBrand[b].teikiSales), teikiProfit: maxAbsOf(r => r.byBrand[b].teikiProfit),
+        tsujoQty: maxAbsOf(r => r.byBrand[b].tsujoQty), tsujoSales: maxAbsOf(r => r.byBrand[b].tsujoSales), tsujoProfit: maxAbsOf(r => r.byBrand[b].tsujoProfit),
       };
     });
 
     const bandOf = i => (i % 2 === 1 ? ' brand-band' : '');
 
-    const brandHeaderCells = pivot.brands.map((b, i) => (bandOf(i) ? `<th colspan="4" class="brand-band">${b}</th>` : `<th colspan="4">${b}</th>`)).join('');
+    const brandHeaderCells = pivot.brands.map((b, i) => (bandOf(i) ? `<th colspan="6" class="brand-band">${b}</th>` : `<th colspan="6">${b}</th>`)).join('');
     const brandSubHeaderCells = pivot.brands
-      .map((b, i) => `<th class="col-teiki${bandOf(i)}">定期売上</th><th class="col-teiki${bandOf(i)}">定期粗利</th><th class="col-tsujo${bandOf(i)}">通常売上</th><th class="col-tsujo${bandOf(i)}">通常粗利</th>`)
+      .map((b, i) => `<th class="col-teiki${bandOf(i)}">定期数</th><th class="col-teiki${bandOf(i)}">定期売上</th><th class="col-teiki${bandOf(i)}">定期粗利</th><th class="col-tsujo${bandOf(i)}">通常数</th><th class="col-tsujo${bandOf(i)}">通常売上</th><th class="col-tsujo${bandOf(i)}">通常粗利</th>`)
       .join('');
 
     const bodyRows = rows.map(row => {
@@ -218,15 +218,19 @@
         const cell = row.byBrand[b];
         const m = brandMax[b];
         const band = bandOf(i);
-        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales, 'teiki')}">${formatYen(cell.teikiSales)}</td>`
+        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiQty, m.teikiQty, 'teiki')}">${formatNumber(cell.teikiQty)}</td>`
+          + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales, 'teiki')}">${formatYen(cell.teikiSales)}</td>`
           + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiProfit, m.teikiProfit, 'teiki')}">${formatYen(cell.teikiProfit)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoQty, m.tsujoQty, 'tsujo')}">${formatNumber(cell.tsujoQty)}</td>`
           + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoSales, m.tsujoSales, 'tsujo')}">${formatYen(cell.tsujoSales)}</td>`
           + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit, 'tsujo')}">${formatYen(cell.tsujoProfit)}</td>`;
       }).join('');
       return `<tr>
         <td>${row.yearMonth}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiQty, totalMax.teikiQty, 'teiki')}">${formatNumber(row.totalTeikiQty)}</td>
         <td class="col-teiki" style="${heatmapColor(row.totalTeikiSales, totalMax.teikiSales, 'teiki')}">${formatYen(row.totalTeikiSales)}</td>
         <td class="col-teiki" style="${heatmapColor(row.totalTeikiProfit, totalMax.teikiProfit, 'teiki')}">${formatYen(row.totalTeikiProfit)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoQty, totalMax.tsujoQty, 'tsujo')}">${formatNumber(row.totalTsujoQty)}</td>
         <td class="col-tsujo" style="${heatmapColor(row.totalTsujoSales, totalMax.tsujoSales, 'tsujo')}">${formatYen(row.totalTsujoSales)}</td>
         <td class="col-tsujo" style="${heatmapColor(row.totalTsujoProfit, totalMax.tsujoProfit, 'tsujo')}">${formatYen(row.totalTsujoProfit)}</td>
         ${brandCells}
@@ -236,8 +240,8 @@
     return `<div class="brand-pivot-scroll">
       <table class="brand-pivot-table">
         <thead>
-          <tr><th rowspan="2">月</th><th colspan="4">全体</th>${brandHeaderCells}</tr>
-          <tr><th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th>${brandSubHeaderCells}</tr>
+          <tr><th rowspan="2">月</th><th colspan="6">全体</th>${brandHeaderCells}</tr>
+          <tr><th class="col-teiki">定期数</th><th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常数</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th>${brandSubHeaderCells}</tr>
         </thead>
         <tbody>${bodyRows}</tbody>
       </table>
@@ -251,22 +255,22 @@
     const rows = pivot.rows;
     const maxAbsOf = accessor => Math.max(0, ...rows.map(r => Math.abs(accessor(r))));
     const totalMax = {
-      teikiSales: maxAbsOf(r => r.totalTeikiSales), teikiProfit: maxAbsOf(r => r.totalTeikiProfit),
-      tsujoSales: maxAbsOf(r => r.totalTsujoSales), tsujoProfit: maxAbsOf(r => r.totalTsujoProfit),
+      teikiQty: maxAbsOf(r => r.totalTeikiQty), teikiSales: maxAbsOf(r => r.totalTeikiSales), teikiProfit: maxAbsOf(r => r.totalTeikiProfit),
+      tsujoQty: maxAbsOf(r => r.totalTsujoQty), tsujoSales: maxAbsOf(r => r.totalTsujoSales), tsujoProfit: maxAbsOf(r => r.totalTsujoProfit),
     };
     const channelMax = {};
     pivot.channels.forEach(c => {
       channelMax[c] = {
-        teikiSales: maxAbsOf(r => r.byChannel[c].teikiSales), teikiProfit: maxAbsOf(r => r.byChannel[c].teikiProfit),
-        tsujoSales: maxAbsOf(r => r.byChannel[c].tsujoSales), tsujoProfit: maxAbsOf(r => r.byChannel[c].tsujoProfit),
+        teikiQty: maxAbsOf(r => r.byChannel[c].teikiQty), teikiSales: maxAbsOf(r => r.byChannel[c].teikiSales), teikiProfit: maxAbsOf(r => r.byChannel[c].teikiProfit),
+        tsujoQty: maxAbsOf(r => r.byChannel[c].tsujoQty), tsujoSales: maxAbsOf(r => r.byChannel[c].tsujoSales), tsujoProfit: maxAbsOf(r => r.byChannel[c].tsujoProfit),
       };
     });
 
     const bandOf = i => (i % 2 === 1 ? ' brand-band' : '');
 
-    const channelHeaderCells = pivot.channels.map((c, i) => (bandOf(i) ? `<th colspan="4" class="brand-band">${c}</th>` : `<th colspan="4">${c}</th>`)).join('');
+    const channelHeaderCells = pivot.channels.map((c, i) => (bandOf(i) ? `<th colspan="6" class="brand-band">${c}</th>` : `<th colspan="6">${c}</th>`)).join('');
     const channelSubHeaderCells = pivot.channels
-      .map((c, i) => `<th class="col-teiki${bandOf(i)}">定期売上</th><th class="col-teiki${bandOf(i)}">定期粗利</th><th class="col-tsujo${bandOf(i)}">通常売上</th><th class="col-tsujo${bandOf(i)}">通常粗利</th>`)
+      .map((c, i) => `<th class="col-teiki${bandOf(i)}">定期数</th><th class="col-teiki${bandOf(i)}">定期売上</th><th class="col-teiki${bandOf(i)}">定期粗利</th><th class="col-tsujo${bandOf(i)}">通常数</th><th class="col-tsujo${bandOf(i)}">通常売上</th><th class="col-tsujo${bandOf(i)}">通常粗利</th>`)
       .join('');
 
     const bodyRows = rows.map(row => {
@@ -274,15 +278,19 @@
         const cell = row.byChannel[c];
         const m = channelMax[c];
         const band = bandOf(i);
-        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales, 'teiki')}">${formatYen(cell.teikiSales)}</td>`
+        return `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiQty, m.teikiQty, 'teiki')}">${formatNumber(cell.teikiQty)}</td>`
+          + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiSales, m.teikiSales, 'teiki')}">${formatYen(cell.teikiSales)}</td>`
           + `<td class="col-teiki${band}" style="${heatmapColor(cell.teikiProfit, m.teikiProfit, 'teiki')}">${formatYen(cell.teikiProfit)}</td>`
+          + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoQty, m.tsujoQty, 'tsujo')}">${formatNumber(cell.tsujoQty)}</td>`
           + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoSales, m.tsujoSales, 'tsujo')}">${formatYen(cell.tsujoSales)}</td>`
           + `<td class="col-tsujo${band}" style="${heatmapColor(cell.tsujoProfit, m.tsujoProfit, 'tsujo')}">${formatYen(cell.tsujoProfit)}</td>`;
       }).join('');
       return `<tr>
         <td>${row.yearMonth}</td>
+        <td class="col-teiki" style="${heatmapColor(row.totalTeikiQty, totalMax.teikiQty, 'teiki')}">${formatNumber(row.totalTeikiQty)}</td>
         <td class="col-teiki" style="${heatmapColor(row.totalTeikiSales, totalMax.teikiSales, 'teiki')}">${formatYen(row.totalTeikiSales)}</td>
         <td class="col-teiki" style="${heatmapColor(row.totalTeikiProfit, totalMax.teikiProfit, 'teiki')}">${formatYen(row.totalTeikiProfit)}</td>
+        <td class="col-tsujo" style="${heatmapColor(row.totalTsujoQty, totalMax.tsujoQty, 'tsujo')}">${formatNumber(row.totalTsujoQty)}</td>
         <td class="col-tsujo" style="${heatmapColor(row.totalTsujoSales, totalMax.tsujoSales, 'tsujo')}">${formatYen(row.totalTsujoSales)}</td>
         <td class="col-tsujo" style="${heatmapColor(row.totalTsujoProfit, totalMax.tsujoProfit, 'tsujo')}">${formatYen(row.totalTsujoProfit)}</td>
         ${channelCells}
@@ -292,8 +300,8 @@
     return `<div class="channel-pivot-scroll">
       <table class="channel-pivot-table">
         <thead>
-          <tr><th rowspan="2">月</th><th colspan="4">全体</th>${channelHeaderCells}</tr>
-          <tr><th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th>${channelSubHeaderCells}</tr>
+          <tr><th rowspan="2">月</th><th colspan="6">全体</th>${channelHeaderCells}</tr>
+          <tr><th class="col-teiki">定期数</th><th class="col-teiki">定期売上</th><th class="col-teiki">定期粗利</th><th class="col-tsujo">通常数</th><th class="col-tsujo">通常売上</th><th class="col-tsujo">通常粗利</th>${channelSubHeaderCells}</tr>
         </thead>
         <tbody>${bodyRows}</tbody>
       </table>

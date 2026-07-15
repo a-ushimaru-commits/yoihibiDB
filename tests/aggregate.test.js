@@ -324,13 +324,13 @@ test('getMonthlyTrend includes a daily-only month, falling back to its daily agg
 function pivotSampleState() {
   return {
     baseRecords: [
-      { yearMonth: '2025-06', channel: 'TV', type: '定期', brand: 'MCTオイル', sales: 100, cost: 40, profit: 60 },
-      { yearMonth: '2025-06', channel: '自社', type: '通常', brand: 'MSMパウダー', sales: 200, cost: 80, profit: 120 },
-      { yearMonth: '2025-06', channel: 'TV', type: '通常', brand: null, sales: 50, cost: 20, profit: 30 }, // blank-brand row: counts in totals, not in byBrand
+      { yearMonth: '2025-06', channel: 'TV', type: '定期', brand: 'MCTオイル', qty: 5, sales: 100, cost: 40, profit: 60 },
+      { yearMonth: '2025-06', channel: '自社', type: '通常', brand: 'MSMパウダー', qty: 8, sales: 200, cost: 80, profit: 120 },
+      { yearMonth: '2025-06', channel: 'TV', type: '通常', brand: null, qty: 3, sales: 50, cost: 20, profit: 30 }, // blank-brand row: counts in totals, not in byBrand
     ],
     monthlyRecords: [
-      { yearMonth: '2026-06', channel: 'TV', type: '定期', brand: 'MCTオイル', sales: 300, cost: 120, profit: 180 },
-      { yearMonth: '2026-06', channel: '自社', type: '通常', brand: '未分類', sales: 10, cost: 5, profit: 5 }, // "未分類" is a real string brand, unlike null
+      { yearMonth: '2026-06', channel: 'TV', type: '定期', brand: 'MCTオイル', qty: 12, sales: 300, cost: 120, profit: 180 },
+      { yearMonth: '2026-06', channel: '自社', type: '通常', brand: '未分類', qty: 1, sales: 10, cost: 5, profit: 5 }, // "未分類" is a real string brand, unlike null
     ],
     dailyRecords: [],
     targets: [],
@@ -355,21 +355,23 @@ test('getBrandMonthlyPivot totals include blank-brand rows even though they are 
   const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
   assert.equal(june2025.totalTeikiSales, 100);
   assert.equal(june2025.totalTeikiProfit, 60);
+  assert.equal(june2025.totalTeikiQty, 5);
   assert.equal(june2025.totalTsujoSales, 250); // 200 (MSMパウダー) + 50 (blank brand)
   assert.equal(june2025.totalTsujoProfit, 150); // 120 + 30
+  assert.equal(june2025.totalTsujoQty, 11); // 8 (MSMパウダー) + 3 (blank brand)
 });
 
 test('getBrandMonthlyPivot zero-fills a brand with no data in a given month, per-brand split by 定期/通常', () => {
   const pivot = getBrandMonthlyPivot(pivotSampleState());
   const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
-  assert.deepEqual(june2025.byBrand['MCTオイル'], { teikiSales: 100, teikiProfit: 60, tsujoSales: 0, tsujoProfit: 0 });
-  assert.deepEqual(june2025.byBrand['MSMパウダー'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 });
-  assert.deepEqual(june2025.byBrand['未分類'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 }); // no 2025-06 row for 未分類 at all
+  assert.deepEqual(june2025.byBrand['MCTオイル'], { teikiQty: 5, teikiSales: 100, teikiProfit: 60, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2025.byBrand['MSMパウダー'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 8, tsujoSales: 200, tsujoProfit: 120 });
+  assert.deepEqual(june2025.byBrand['未分類'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 }); // no 2025-06 row for 未分類 at all
 
   const june2026 = pivot.rows.find(r => r.yearMonth === '2026-06');
-  assert.deepEqual(june2026.byBrand['MCTオイル'], { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 });
-  assert.deepEqual(june2026.byBrand['MSMパウダー'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 });
-  assert.deepEqual(june2026.byBrand['未分類'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 10, tsujoProfit: 5 });
+  assert.deepEqual(june2026.byBrand['MCTオイル'], { teikiQty: 12, teikiSales: 300, teikiProfit: 180, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2026.byBrand['MSMパウダー'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2026.byBrand['未分類'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 1, tsujoSales: 10, tsujoProfit: 5 });
 });
 
 test('getBrandMonthlyPivot recodes 1期 (baseRecords) brands not in productBrandMapping to その他, once a mapping is loaded', () => {
@@ -384,7 +386,7 @@ test('getBrandMonthlyPivot recodes 1期 (baseRecords) brands not in productBrand
 
   const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
   // その他 = MSMパウダー(200/120,通常) + 元々null(50/30,通常) が合算される
-  assert.deepEqual(june2025.byBrand['その他'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 250, tsujoProfit: 150 });
+  assert.deepEqual(june2025.byBrand['その他'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 11, tsujoSales: 250, tsujoProfit: 150 });
 });
 
 test('getBrandMonthlyPivot leaves 1期 (baseRecords) brands untouched when productBrandMapping is empty (not yet loaded)', () => {
@@ -406,11 +408,11 @@ test('getBrandMonthlyPivot with a channel filter restricts months/brands/totals/
   const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
   assert.equal(june2025.totalTeikiSales, 0);
   assert.equal(june2025.totalTsujoSales, 200);
-  assert.deepEqual(june2025.byBrand['MSMパウダー'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 });
-  assert.deepEqual(june2025.byBrand['未分類'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2025.byBrand['MSMパウダー'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 8, tsujoSales: 200, tsujoProfit: 120 });
+  assert.deepEqual(june2025.byBrand['未分類'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 });
 
   const june2026 = pivot.rows.find(r => r.yearMonth === '2026-06');
-  assert.deepEqual(june2026.byBrand['未分類'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 10, tsujoProfit: 5 });
+  assert.deepEqual(june2026.byBrand['未分類'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 1, tsujoSales: 10, tsujoProfit: 5 });
 });
 
 test('getBrandMonthlyPivot with no filter argument behaves exactly as before (backward compatible)', () => {
@@ -430,20 +432,22 @@ test('getChannelMonthlyPivot totals match the whole-company totals for the month
   const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
   assert.equal(june2025.totalTeikiSales, 100);
   assert.equal(june2025.totalTeikiProfit, 60);
+  assert.equal(june2025.totalTeikiQty, 5);
   assert.equal(june2025.totalTsujoSales, 250); // 200 (自社/MSMパウダー) + 50 (TV/blank brand)
   assert.equal(june2025.totalTsujoProfit, 150);
+  assert.equal(june2025.totalTsujoQty, 11);
 });
 
 test('getChannelMonthlyPivot zero-fills a channel with no data in a given month, per-channel split by 定期/通常', () => {
   const pivot = getChannelMonthlyPivot(pivotSampleState());
   const june2025 = pivot.rows.find(r => r.yearMonth === '2025-06');
-  assert.deepEqual(june2025.byChannel['TV'], { teikiSales: 100, teikiProfit: 60, tsujoSales: 50, tsujoProfit: 30 });
-  assert.deepEqual(june2025.byChannel['自社'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 });
-  assert.deepEqual(june2025.byChannel['アマゾン'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2025.byChannel['TV'], { teikiQty: 5, teikiSales: 100, teikiProfit: 60, tsujoQty: 3, tsujoSales: 50, tsujoProfit: 30 });
+  assert.deepEqual(june2025.byChannel['自社'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 8, tsujoSales: 200, tsujoProfit: 120 });
+  assert.deepEqual(june2025.byChannel['アマゾン'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 });
 
   const june2026 = pivot.rows.find(r => r.yearMonth === '2026-06');
-  assert.deepEqual(june2026.byChannel['TV'], { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 });
-  assert.deepEqual(june2026.byChannel['自社'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 10, tsujoProfit: 5 });
+  assert.deepEqual(june2026.byChannel['TV'], { teikiQty: 12, teikiSales: 300, teikiProfit: 180, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(june2026.byChannel['自社'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 1, tsujoSales: 10, tsujoProfit: 5 });
 });
 
 test('getChannelMonthlyPivot returns empty months/rows but all 7 channels when both record sets are empty', () => {
@@ -458,14 +462,14 @@ function dailyFallbackState() {
     baseRecords: [],
     monthlyRecords: [
       // 2026-06 already has confirmed monthly data
-      { yearMonth: '2026-06', channel: '自社', type: '通常', brand: 'MCTオイル', sales: 1000, cost: 400, profit: 600 },
+      { yearMonth: '2026-06', channel: '自社', type: '通常', brand: 'MCTオイル', qty: 50, sales: 1000, cost: 400, profit: 600 },
     ],
     dailyRecords: [
       // 2026-06 also has daily records (same month as monthlyRecords) -- must NOT be double-counted
-      { yearMonth: '2026-06', date: '2026-06-01', channel: '自社', type: '通常', brand: 'MCTオイル', sales: 50, cost: 20, profit: 30 },
+      { yearMonth: '2026-06', date: '2026-06-01', channel: '自社', type: '通常', brand: 'MCTオイル', qty: 2, sales: 50, cost: 20, profit: 30 },
       // 2026-07 has ONLY daily records (no monthly xlsx yet) -- must be used as an interim aggregate
-      { yearMonth: '2026-07', date: '2026-07-01', channel: 'アマゾン', type: '定期', brand: 'MSMパウダー', sales: 200, cost: 80, profit: 120 },
-      { yearMonth: '2026-07', date: '2026-07-02', channel: '自社', type: '通常', brand: 'MCTオイル', sales: 300, cost: 100, profit: 200 },
+      { yearMonth: '2026-07', date: '2026-07-01', channel: 'アマゾン', type: '定期', brand: 'MSMパウダー', qty: 7, sales: 200, cost: 80, profit: 120 },
+      { yearMonth: '2026-07', date: '2026-07-02', channel: '自社', type: '通常', brand: 'MCTオイル', qty: 15, sales: 300, cost: 100, profit: 200 },
     ],
     targets: [],
     mediaMapping: {},
@@ -483,8 +487,8 @@ test('getBrandMonthlyPivot includes a daily-only month as an interim aggregate, 
   const july = pivot.rows.find(r => r.yearMonth === '2026-07');
   assert.equal(july.totalTeikiSales, 200);
   assert.equal(july.totalTsujoSales, 300);
-  assert.deepEqual(july.byBrand['MSMパウダー'], { teikiSales: 200, teikiProfit: 120, tsujoSales: 0, tsujoProfit: 0 });
-  assert.deepEqual(july.byBrand['MCTオイル'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 300, tsujoProfit: 200 });
+  assert.deepEqual(july.byBrand['MSMパウダー'], { teikiQty: 7, teikiSales: 200, teikiProfit: 120, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(july.byBrand['MCTオイル'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 15, tsujoSales: 300, tsujoProfit: 200 });
 });
 
 test('getChannelMonthlyPivot includes a daily-only month as an interim aggregate, but ignores daily records for a month that already has confirmed monthly data', () => {
@@ -497,8 +501,8 @@ test('getChannelMonthlyPivot includes a daily-only month as an interim aggregate
   const july = pivot.rows.find(r => r.yearMonth === '2026-07');
   assert.equal(july.totalTeikiSales, 200);
   assert.equal(july.totalTsujoSales, 300);
-  assert.deepEqual(july.byChannel['アマゾン'], { teikiSales: 200, teikiProfit: 120, tsujoSales: 0, tsujoProfit: 0 });
-  assert.deepEqual(july.byChannel['自社'], { teikiSales: 0, teikiProfit: 0, tsujoSales: 300, tsujoProfit: 200 });
+  assert.deepEqual(july.byChannel['アマゾン'], { teikiQty: 7, teikiSales: 200, teikiProfit: 120, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 });
+  assert.deepEqual(july.byChannel['自社'], { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 15, tsujoSales: 300, tsujoProfit: 200 });
 });
 
 function ownChannelSummaryState() {

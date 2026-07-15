@@ -243,18 +243,18 @@ function samplePivot() {
     rows: [
       {
         yearMonth: '2025-06',
-        totalTeikiSales: 100, totalTeikiProfit: 60, totalTsujoSales: 250, totalTsujoProfit: 150,
+        totalTeikiQty: 5, totalTeikiSales: 100, totalTeikiProfit: 60, totalTsujoQty: 11, totalTsujoSales: 250, totalTsujoProfit: 150,
         byBrand: {
-          'MCTオイル': { teikiSales: 100, teikiProfit: 60, tsujoSales: 0, tsujoProfit: 0 },
-          'MSMパウダー': { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 },
+          'MCTオイル': { teikiQty: 5, teikiSales: 100, teikiProfit: 60, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 },
+          'MSMパウダー': { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 8, tsujoSales: 200, tsujoProfit: 120 },
         },
       },
       {
         yearMonth: '2026-06',
-        totalTeikiSales: 300, totalTeikiProfit: 180, totalTsujoSales: 10, totalTsujoProfit: 5,
+        totalTeikiQty: 12, totalTeikiSales: 300, totalTeikiProfit: 180, totalTsujoQty: 1, totalTsujoSales: 10, totalTsujoProfit: 5,
         byBrand: {
-          'MCTオイル': { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 },
-          'MSMパウダー': { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 },
+          'MCTオイル': { teikiQty: 12, teikiSales: 300, teikiProfit: 180, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 },
+          'MSMパウダー': { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 },
         },
       },
     ],
@@ -266,10 +266,18 @@ test('renderBrandMonthlyPivotHTML renders a wide pivot table with month rows and
   assert.match(html, /<table class="brand-pivot-table">/);
   assert.match(html, /2025-06/);
   assert.match(html, /2026-06/);
-  assert.match(html, /<th colspan="4">MCTオイル<\/th>/);
-  assert.match(html, /<th colspan="4" class="brand-band">MSMパウダー<\/th>/);
+  assert.match(html, /<th colspan="6">MCTオイル<\/th>/);
+  assert.match(html, /<th colspan="6" class="brand-band">MSMパウダー<\/th>/);
   assert.match(html, /¥100/);
   assert.match(html, /¥300/);
+});
+
+test('renderBrandMonthlyPivotHTML includes 定期数/通常数 quantity columns alongside 売上/粗利', () => {
+  const html = renderBrandMonthlyPivotHTML(samplePivot());
+  assert.match(html, /<th class="col-teiki">定期数<\/th>/);
+  assert.match(html, /<th class="col-tsujo">通常数<\/th>/);
+  assert.match(html, />5</); // totalTeikiQty for 2025-06
+  assert.match(html, />12</); // totalTeikiQty for 2026-06 / byBrand MCTオイル
 });
 
 test('renderBrandMonthlyPivotHTML colors columns by 定期(blue-family class)/通常(green-family class) for both the totals and every brand group', () => {
@@ -286,9 +294,9 @@ test('renderBrandMonthlyPivotHTML applies a heatmap inline style to at least one
 test('renderBrandMonthlyPivotHTML bands alternating brand column groups with a "brand-band" class so adjacent brands are visually distinct', () => {
   const html = renderBrandMonthlyPivotHTML(samplePivot());
   // first brand (index 0, MCTオイル): no band class
-  assert.match(html, /<th colspan="4">MCTオイル<\/th>/);
+  assert.match(html, /<th colspan="6">MCTオイル<\/th>/);
   // second brand (index 1, MSMパウダー): banded
-  assert.match(html, /<th colspan="4" class="brand-band">MSMパウダー<\/th>/);
+  assert.match(html, /<th colspan="6" class="brand-band">MSMパウダー<\/th>/);
   assert.match(html, /class="col-teiki brand-band"/);
   assert.match(html, /class="col-tsujo brand-band"/);
 });
@@ -306,18 +314,18 @@ function sampleChannelPivot() {
     rows: [
       {
         yearMonth: '2025-06',
-        totalTeikiSales: 100, totalTeikiProfit: 60, totalTsujoSales: 250, totalTsujoProfit: 150,
+        totalTeikiQty: 5, totalTeikiSales: 100, totalTeikiProfit: 60, totalTsujoQty: 11, totalTsujoSales: 250, totalTsujoProfit: 150,
         byChannel: {
-          '自社': { teikiSales: 100, teikiProfit: 60, tsujoSales: 0, tsujoProfit: 0 },
-          'アマゾン': { teikiSales: 0, teikiProfit: 0, tsujoSales: 200, tsujoProfit: 120 },
+          '自社': { teikiQty: 5, teikiSales: 100, teikiProfit: 60, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 },
+          'アマゾン': { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 8, tsujoSales: 200, tsujoProfit: 120 },
         },
       },
       {
         yearMonth: '2026-06',
-        totalTeikiSales: 300, totalTeikiProfit: 180, totalTsujoSales: 10, totalTsujoProfit: 5,
+        totalTeikiQty: 12, totalTeikiSales: 300, totalTeikiProfit: 180, totalTsujoQty: 1, totalTsujoSales: 10, totalTsujoProfit: 5,
         byChannel: {
-          '自社': { teikiSales: 300, teikiProfit: 180, tsujoSales: 0, tsujoProfit: 0 },
-          'アマゾン': { teikiSales: 0, teikiProfit: 0, tsujoSales: 0, tsujoProfit: 0 },
+          '自社': { teikiQty: 12, teikiSales: 300, teikiProfit: 180, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 },
+          'アマゾン': { teikiQty: 0, teikiSales: 0, teikiProfit: 0, tsujoQty: 0, tsujoSales: 0, tsujoProfit: 0 },
         },
       },
     ],
@@ -329,12 +337,18 @@ test('renderChannelMonthlyPivotHTML renders a wide pivot table with month rows a
   assert.match(html, /<table class="channel-pivot-table">/);
   assert.match(html, /2025-06/);
   assert.match(html, /2026-06/);
-  assert.match(html, /<th colspan="4">自社<\/th>/);
-  assert.match(html, /<th colspan="4" class="brand-band">アマゾン<\/th>/);
+  assert.match(html, /<th colspan="6">自社<\/th>/);
+  assert.match(html, /<th colspan="6" class="brand-band">アマゾン<\/th>/);
   assert.match(html, /class="col-teiki"/);
   assert.match(html, /class="col-tsujo"/);
   assert.match(html, /¥100/);
   assert.match(html, /¥300/);
+});
+
+test('renderChannelMonthlyPivotHTML includes 定期数/通常数 quantity columns alongside 売上/粗利', () => {
+  const html = renderChannelMonthlyPivotHTML(sampleChannelPivot());
+  assert.match(html, /<th class="col-teiki">定期数<\/th>/);
+  assert.match(html, /<th class="col-tsujo">通常数<\/th>/);
 });
 
 test('renderChannelMonthlyPivotHTML shows an empty-state message when there are no months yet', () => {
