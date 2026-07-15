@@ -1,10 +1,16 @@
 (function () {
   const { parseBaseWorkbook, parseMonthlyWorkbook, parseDailyCsv, parseBrandLookup, parseTargetsWorkbook, detectFileType, guessBrandForProductCode, rowsToCsv, filterEnrichedRowsByYearMonth } = window.YoiHibi;
   const { createStore } = window.YoiHibi;
+  const { wrapStoreWithSync, debounce } = window.YoiHibi;
   const { getMonthlyComparison, getChannelTable, getBrandTable, getDailyCumulativeSeries, getMonthlyTrend, getBrandMonthlyPivot, getChannelMonthlyPivot, getOwnChannelMonthlySummary } = window.YoiHibi;
   const { renderKpiCardsHTML, renderChannelTableHTML, renderMappingWarningsHTML, renderBrandTableHTML, renderProductBrandWarningsHTML, renderBrandMonthlyPivotHTML, renderChannelMonthlyPivotHTML, renderOwnChannelMonthlySummaryHTML, renderJanCostWarningHTML } = window.YoiHibi;
 
-  const store = createStore(window.localStorage);
+  const rawStore = createStore(window.localStorage);
+  const store = window.YOIHIBI_SYNC_ENDPOINT
+    ? wrapStoreWithSync(rawStore, debounce(json => {
+        fetch(window.YOIHIBI_SYNC_ENDPOINT, { method: 'POST', body: json }).catch(() => {});
+      }, 500))
+    : rawStore;
   let trendSalesChart = null;
   let trendQtyChart = null;
   let dailySalesChart = null;
@@ -328,11 +334,50 @@
     });
   }
 
+  function formatSavedAt(epochMs) {
+    if (!epochMs) return '';
+    const d = new Date(epochMs);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  async function setupRevertButton() {
+    if (!window.YOIHIBI_SYNC_ENDPOINT) return;
+    const btn = el('revertBtn');
+    const meta = el('revertMeta');
+    btn.style.display = '';
+    meta.style.display = '';
+
+    try {
+      const res = await fetch('/api/meta');
+      const info = await res.json();
+      btn.disabled = !info.hasPrevious;
+      meta.textContent = info.hasPrevious ? `（直前の保存: ${formatSavedAt(info.previousSavedAt)}）` : '（戻せる状態がありません）';
+    } catch (e) {
+      btn.disabled = true;
+      meta.textContent = '';
+    }
+
+    btn.addEventListener('click', async () => {
+      if (!confirm('直前の状態に戻します。よろしいですか？')) return;
+      try {
+        const res = await fetch('/api/revert', { method: 'POST' });
+        if (res.ok) {
+          location.reload();
+        } else {
+          alert('復元に失敗しました。');
+        }
+      } catch (e) {
+        alert('復元に失敗しました。');
+      }
+    });
+  }
+
   function init() {
     setupDropzone();
     setupSettingsPanel();
     setupDownloadEnrichedButton();
     refreshDownloadEnrichedVisibility();
+    setupRevertButton();
     el('monthSelect').addEventListener('change', renderAll);
     refreshMonthOptions();
     renderAll();

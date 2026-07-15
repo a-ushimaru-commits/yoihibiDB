@@ -86,6 +86,10 @@
     データを読み込み: <input type="file" id="importInput" accept=".json">
     <button id="clearBtn">全データをクリア</button>
   </p>
+  <p>
+    <button id="revertBtn" style="display:none">直前の状態に戻す</button>
+    <span id="revertMeta" style="display:none"></span>
+  </p>
 </details>
 
 <script src="js/vendor/xlsx.full.min.js"></script>
@@ -93,6 +97,7 @@
 <script src="js/mapping.js"></script>
 <script src="js/parsers.js"></script>
 <script src="js/store.js"></script>
+<script src="js/sync.js"></script>
 <script src="js/aggregate.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
