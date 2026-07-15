@@ -47,6 +47,25 @@ test('renderKpiCardsHTML also shows 前月比 (MoM) and 目標達成率(日割),
   assert.match(html, /105\.0%/); // profitTargetRateProrated
 });
 
+test('renderKpiCardsHTML shows the raw target yen figure next to 目標達成率（全体） when a target is set', () => {
+  const html = renderKpiCardsHTML({
+    sales: 3000000, profit: 1200000, profitRate: 0.4,
+    salesTargetRate: 0.8, profitTargetRate: 0.75,
+    salesTarget: 3750000, profitTarget: 1600000,
+  });
+  assert.match(html, /目標達成率（全体） .*目標 ¥3,750,000/);
+  assert.match(html, /目標達成率（全体） .*目標 ¥1,600,000/);
+});
+
+test('renderKpiCardsHTML omits the target yen figure entirely when no target is set (null)', () => {
+  const html = renderKpiCardsHTML({
+    sales: 3000000, profit: 1200000, profitRate: 0.4,
+    salesTargetRate: null, profitTargetRate: null,
+    salesTarget: null, profitTarget: null,
+  });
+  assert.doesNotMatch(html, /目標 ¥/);
+});
+
 test('renderKpiCardsHTML colors positive percentages red and negative ones blue, leaving N/A and 0 as plain black text', () => {
   const html = renderKpiCardsHTML({
     sales: 3000000, profit: 1200000, profitRate: 0.4,

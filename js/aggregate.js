@@ -89,6 +89,8 @@
       profitYoY: pctChange(current.profit, base.profit),
       salesMoM: pctChange(current.sales, prev.sales),
       profitMoM: pctChange(current.profit, prev.profit),
+      salesTarget: target ? target.salesTarget : null,
+      profitTarget: target ? target.profitTarget : null,
       salesTargetRate: target && target.salesTarget ? current.sales / target.salesTarget : null,
       profitTargetRate: target && target.profitTarget ? current.profit / target.profitTarget : null,
       salesTargetRateProrated: proratedSalesTarget ? current.sales / proratedSalesTarget : null,

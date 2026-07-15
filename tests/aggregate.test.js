@@ -124,6 +124,20 @@ test('getMonthlyComparison prorates the target by elapsed days when the month ha
   assert.ok(cmp.salesTargetRate < 1); // full-month target rate is much lower than the prorated one
 });
 
+test('getMonthlyComparison exposes the raw (non-prorated) target figures alongside the target rates', () => {
+  const cmp = getMonthlyComparison(sampleState(), '2026-06');
+  assert.equal(cmp.salesTarget, 3000);
+  assert.equal(cmp.profitTarget, 1800);
+});
+
+test('getMonthlyComparison returns null target figures when no target is set for the month', () => {
+  const state = sampleState();
+  state.targets = [];
+  const cmp = getMonthlyComparison(state, '2026-06');
+  assert.equal(cmp.salesTarget, null);
+  assert.equal(cmp.profitTarget, null);
+});
+
 test('getMonthlyComparison restricts to a channel and uses an override targets array when given options', () => {
   const state = sampleState();
   const cmp = getMonthlyComparison(state, '2026-06', { channel: '自社', targets: [{ yearMonth: '2026-06', salesTarget: 1800, profitTarget: 1080 }] });

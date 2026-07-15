@@ -25,6 +25,10 @@
     return `<span class="${cls}">${text}</span>`;
   }
 
+  function targetSuffix(target) {
+    return target != null ? `（目標 ${formatYen(target)}）` : '';
+  }
+
   const KPI_RING_RADIUS = 52;
   const KPI_RING_CIRCUMFERENCE = 2 * Math.PI * KPI_RING_RADIUS;
 
@@ -59,7 +63,7 @@
             <div class="kpi-label">${prefix}売上</div>
             <div class="kpi-value">${formatYen(c.sales)}</div>
             <div class="kpi-sub">1期比 ${pctSpan(c.salesYoY)} ／ 前月比 ${pctSpan(c.salesMoM)}</div>
-            <div class="kpi-sub">目標達成率（全体） ${pctSpan(c.salesTargetRate)}</div>
+            <div class="kpi-sub">目標達成率（全体） ${pctSpan(c.salesTargetRate)}${targetSuffix(c.salesTarget)}</div>
             <div class="kpi-sub">目標達成率（日割） ${pctSpan(c.salesTargetRateProrated)}</div>
           </div>
           ${kpiRingHTML(c.salesTargetRateProrated, salesRingColor)}
@@ -71,7 +75,7 @@
             <div class="kpi-label">${prefix}粗利</div>
             <div class="kpi-value">${formatYen(c.profit)}</div>
             <div class="kpi-sub">1期比 ${pctSpan(c.profitYoY)} ／ 前月比 ${pctSpan(c.profitMoM)}</div>
-            <div class="kpi-sub">目標達成率（全体） ${pctSpan(c.profitTargetRate)}</div>
+            <div class="kpi-sub">目標達成率（全体） ${pctSpan(c.profitTargetRate)}${targetSuffix(c.profitTarget)}</div>
             <div class="kpi-sub">目標達成率（日割） ${pctSpan(c.profitTargetRateProrated)}</div>
           </div>
           ${kpiRingHTML(c.profitTargetRateProrated, profitRingColor)}
